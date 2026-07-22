@@ -1,0 +1,235 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: publicAnnouncements
+    // Document ID: auto-generated or custom string
+    // Fields:
+    //   - title: string (required, 1-120 chars)
+    //   - description: string (required, 1-4000 chars)
+    //   - createdAt: timestamp (required, immutable after create)
+    //   - updatedAt: timestamp (required)
+    //
+    // Collection: users
+    // Document ID: Firebase Auth uid
+    // Fields:
+    //   - email: string (required)
+    //   - firstName: string (optional)
+    //   - middleName: string (optional)
+    //   - lastName: string (optional)
+    //   - fullName: string (optional)
+    //   - role: string (required)
+    //   - accountStatus: string (optional)
+    //   - profileCompleted: bool (optional)
+    //   - birthdate: string (optional)
+    //   - studentNumber: string (optional)
+    //   - age: string|number (optional)
+    //   - sex: string (optional)
+    //   - gradeLevel: string (optional)
+    //   - section: string (optional)
+    //   - school: string (optional)
+    //   - adminId: string (optional)
+    //   - department: string (optional)
+    //   - position: string (optional)
+    //   - assignedGradeLevel: string (optional)
+    //   - assignedSection: string (optional)
+    //   - badges: list (optional)
+    //   - quizScores: list (optional)
+    //   - progress: list (optional)
+    //   - profileImage: map (optional)
+    //   - createdAt: timestamp (optional)
+    //   - updatedAt: timestamp (optional)
+    //
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function userDocPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function currentUserRole() {
+      return isAuthenticated() && exists(userDocPath()) ? get(userDocPath()).data.role : null;
+    }
+
+    function isDeveloper() {
+      return isAuthenticated() && currentUserRole() == 'developer';
+    }
+
+    function isTeacher() {
+      return isAuthenticated() && currentUserRole() == 'teacher';
+    }
+
+    function isTimestamp(value) {
+      return value is timestamp;
+    }
+
+    function hasOnlyAllowedFields(data, fields) {
+      return data.keys().hasOnly(fields);
+    }
+
+    function isValidAnnouncementData(data) {
+      return hasOnlyAllowedFields(data, ['title', 'description', 'createdAt', 'updatedAt'])
+        && data.title is string
+        && data.title.size() >= 1
+        && data.title.size() <= 120
+        && data.description is string
+        && data.description.size() >= 1
+        && data.description.size() <= 4000
+        && isTimestamp(data.createdAt)
+        && isTimestamp(data.updatedAt);
+    }
+
+    function isValidAnnouncementCreate() {
+      return isValidAnnouncementData(request.resource.data);
+    }
+
+    function isValidAnnouncementUpdate() {
+      return isValidAnnouncementData(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function isValidUserBase(data) {
+      return hasOnlyAllowedFields(data, [
+          'email',
+          'firstName',
+          'middleName',
+          'lastName',
+          'fullName',
+          'role',
+          'accountStatus',
+          'profileCompleted',
+          'birthdate',
+          'studentNumber',
+          'age',
+          'sex',
+          'gradeLevel',
+          'section',
+          'school',
+          'adminId',
+          'department',
+          'position',
+          'assignedGradeLevel',
+          'assignedSection',
+          'badges',
+          'quizScores',
+          'progress',
+          'profileImage',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.email is string
+        && data.email.size() > 0
+        && data.role is string
+        && data.role in ['student', 'teacher', 'developer']
+        && (!('firstName' in data) || data.firstName is string)
+        && (!('middleName' in data) || data.middleName is string)
+        && (!('lastName' in data) || data.lastName is string)
+        && (!('fullName' in data) || data.fullName is string)
+        && (!('accountStatus' in data) || data.accountStatus is string)
+        && (!('profileCompleted' in data) || data.profileCompleted is bool)
+        && (!('birthdate' in data) || data.birthdate is string)
+        && (!('studentNumber' in data) || data.studentNumber is string)
+        && (!('age' in data) || data.age is string || data.age is number)
+        && (!('sex' in data) || data.sex is string)
+        && (!('gradeLevel' in data) || data.gradeLevel is string)
+        && (!('section' in data) || data.section is string)
+        && (!('school' in data) || data.school is string)
+        && (!('adminId' in data) || data.adminId is string)
+        && (!('department' in data) || data.department is string)
+        && (!('position' in data) || data.position is string)
+        && (!('assignedGradeLevel' in data) || data.assignedGradeLevel is string)
+        && (!('assignedSection' in data) || data.assignedSection is string)
+        && (!('badges' in data) || data.badges is list)
+        && (!('quizScores' in data) || data.quizScores is list)
+        && (!('progress' in data) || data.progress is list)
+        && (!('profileImage' in data) || data.profileImage is map)
+        && (!('createdAt' in data) || isTimestamp(data.createdAt))
+        && (!('updatedAt' in data) || isTimestamp(data.updatedAt));
+    }
+
+    function isValidStudentCreate() {
+      return isValidUserBase(request.resource.data)
+        && request.resource.data.role == 'student'
+        && request.resource.data.accountStatus == 'active'
+        && request.resource.data.profileCompleted == false
+        && request.resource.data.email == request.auth.token.email;
+    }
+
+    function isValidSelfUpdate() {
+      return isValidUserBase(request.resource.data)
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function isValidTeacherStudentUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gradeLevel', 'section', 'updatedAt'])
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.gradeLevel is string
+        && request.resource.data.section is string;
+    }
+
+    function isValidDeveloperUserUpdate() {
+      return request.resource.data.role is string
+        && request.resource.data.role in ['student', 'teacher', 'developer']
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (!('assignedGradeLevel' in request.resource.data) || request.resource.data.assignedGradeLevel is string)
+        && (!('assignedSection' in request.resource.data) || request.resource.data.assignedSection is string)
+        && (!('updatedAt' in request.resource.data) || isTimestamp(request.resource.data.updatedAt));
+    }
+
+    // ===============================================================
+    // publicAnnouncements
+    // ===============================================================
+
+    match /publicAnnouncements/{announcementId} {
+      allow read: if true;
+      allow create: if isDeveloper() && isValidAnnouncementCreate();
+      allow update: if isDeveloper() && isValidAnnouncementUpdate();
+      allow delete: if isDeveloper();
+    }
+
+    // ===============================================================
+    // users
+    // ===============================================================
+
+    match /users/{userId} {
+      allow get: if isOwner(userId)
+        || isDeveloper()
+        || (isTeacher() && resource.data.role == 'student');
+
+      allow list: if isDeveloper()
+        || isTeacher();
+
+      allow create: if isAuthenticated()
+        && request.auth.uid == userId
+        && isValidStudentCreate();
+
+      allow update: if (isOwner(userId) && isValidSelfUpdate())
+        || (isTeacher() && resource.data.role == 'student' && isValidTeacherStudentUpdate())
+        || (isDeveloper() && isValidDeveloperUserUpdate());
+
+      allow delete: if isDeveloper();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

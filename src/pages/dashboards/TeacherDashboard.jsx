@@ -13,10 +13,43 @@ function hasAnyProgress(progress) {
 }
 
 function normalizeQuizScorePercent(value) {
-  const raw = typeof value === 'number' ? value : value?.score;
-  const num = Number(raw);
-  if (Number.isNaN(num)) return null;
-  return num <= 10 ? num * 10 : num;
+  if (!value) return null;
+
+  if (typeof value === 'number') {
+    return value <= 1 ? Math.round(value * 100) : value;
+  }
+
+  if (value.latestPercent !== undefined) {
+    return Math.round(Number(value.latestPercent) * 100);
+  }
+
+  if (value.bestPercent !== undefined) {
+    return Math.round(Number(value.bestPercent) * 100);
+  }
+
+  if (
+    value.latestScore !== undefined &&
+    value.maxScore
+  ) {
+    return Math.round(
+      (Number(value.latestScore) /
+        Number(value.maxScore)) *
+        100
+    );
+  }
+
+  if (
+    value.bestScore !== undefined &&
+    value.maxScore
+  ) {
+    return Math.round(
+      (Number(value.bestScore) /
+        Number(value.maxScore)) *
+        100
+    );
+  }
+
+  return null;
 }
 
 function computeAverageQuizScorePercent(students) {
@@ -128,8 +161,17 @@ export default function TeacherDashboard() {
               summary.studentsWithProgress ?? 0,
               summary.averageQuizScore ?? 0
             ],
+            backgroundColor: [
+              '#7f001f',
+              '#98052c',
+              '#b11a43',
+              '#cb3a61',
+              '#df6f8c'
+            ],
+            borderColor: '#7f001f',
             borderWidth: 1,
-            borderRadius: 10
+            borderRadius: 8,
+            maxBarThickness: 54
           }
         ]
       },
@@ -138,9 +180,7 @@ export default function TeacherDashboard() {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            labels: {
-              color: '#1c1132'
-            }
+            display: false
           },
           tooltip: {
             callbacks: {
@@ -156,13 +196,21 @@ export default function TeacherDashboard() {
         },
         scales: {
           x: {
-            ticks: { color: '#4e4466' },
-            grid: { color: 'rgba(28,17,50,0.08)' }
+            ticks: {
+              color: '#586171',
+              font: { size: 11, weight: '600' }
+            },
+            grid: { display: false },
+            border: { display: false }
           },
           y: {
             beginAtZero: true,
-            ticks: { color: '#4e4466' },
-            grid: { color: 'rgba(28,17,50,0.08)' }
+            ticks: {
+              color: '#7a8492',
+              precision: 0
+            },
+            grid: { color: 'rgba(120, 0, 32, 0.08)' },
+            border: { display: false }
           }
         }
       }
@@ -253,26 +301,53 @@ export default function TeacherDashboard() {
   if (loading) return null;
 
   return (
-    <>
-      <header className="topbar">
-        <a className="brand" href="#" onClick={(e) => e.preventDefault()}>
-          <h1 className="brand-logo">JustiFi</h1>
-        </a>
-
-        <div className="topbar-right">
-          <span className="welcome">
-            Welcome, <strong id="navAdminName">{adminName}</strong>
+    <div className="mdps-admin-page">
+      <header className="mdps-admin-header">
+        <button
+          className="mdps-admin-brand"
+          type="button"
+          onClick={() => navigate('/')}
+          aria-label="Go to the JustiFi website"
+        >
+          <span className="mdps-brand-logo-wrap">
+            <img
+              src="/assets/Background/mdps.svg"
+              alt="Mother of Divine Providence School logo"
+            />
           </span>
+
+          <span className="mdps-brand-divider" aria-hidden="true" />
+
+          <span className="mdps-brand-copy">
+            <strong>Mother of Divine Providence School</strong>
+            <span>SCHOOL MANAGEMENT SYSTEM</span>
+          </span>
+        </button>
+
+        <nav className="mdps-admin-nav" aria-label="Admin dashboard navigation">
+          <button type="button" onClick={() => navigate('/')}>
+            Website
+          </button>
+          <button type="button" onClick={() => navigate('/teacher/students')}>
+            Students
+          </button>
           <button
-            id="menuBtn"
-            className="menu-btn"
+            className="is-active"
             type="button"
-            aria-label="Open menu"
             onClick={() => setMenuOpen(true)}
           >
-            ☰
+            Admin
           </button>
-        </div>
+        </nav>
+
+        <button
+          className="mdps-mobile-menu"
+          type="button"
+          aria-label="Open admin menu"
+          onClick={() => setMenuOpen(true)}
+        >
+          ☰
+        </button>
       </header>
 
       <div
@@ -283,87 +358,209 @@ export default function TeacherDashboard() {
 
       <aside id="sideMenu" className={['side-menu', menuOpen ? 'open' : ''].join(' ')}>
         <div className="side-menu-header">
-          <h3>Menu</h3>
-          <button id="closeMenuBtn" className="close-menu-btn" type="button" onClick={() => setMenuOpen(false)}>
+          <div>
+            <span className="mdps-side-menu-label">ADMIN ACCOUNT</span>
+            <h3>{adminName}</h3>
+          </div>
+          <button
+            id="closeMenuBtn"
+            className="close-menu-btn"
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setMenuOpen(false)}
+          >
             ✕
           </button>
         </div>
 
         <div className="side-menu-body">
-          <button className="menu-link" onClick={() => navigate('/teacher/profile')}>Profile</button>
-          <button className="menu-link" onClick={() => navigate('/teacher/students')}>Student List</button>
-          <button className="menu-link" onClick={() => navigate('/teacher/manage-students')}>Manage Students</button>
-          <button className="menu-link logout-btn" onClick={onLogout}>Logout</button>
+          <button className="menu-link" onClick={() => navigate('/teacher/profile')}>
+            Profile
+          </button>
+          <button className="menu-link" onClick={() => navigate('/teacher/students')}>
+            Student List
+          </button>
+          <button className="menu-link" onClick={() => navigate('/teacher/manage-students')}>
+            Manage Students
+          </button>
+          <button className="menu-link" onClick={onPrintData}>
+            Export Student Data
+          </button>
+          <button className="menu-link logout-btn" onClick={onLogout}>
+            Logout
+          </button>
         </div>
       </aside>
 
-      <div className="back-row">
-        <a className="back-btn" href="#" onClick={(e) => { e.preventDefault(); navigate('/'); }}>
-          Back
-        </a>
-      </div>
-
-      <main className="dashboard-shell">
-        <section className="hero-card">
-          <p className="eyebrow">JUSTIFI ADMIN DASHBOARD</p>
-          <h1>
-            Hello, <span id="heroAdminName">{adminName}</span>
-          </h1>
-          <p className="hero-subtext">
-            View registered students and monitor their individual learning progress directly from this dashboard.
-          </p>
-        </section>
-
-        <section className="stats-grid">
-          <div className="stat-card">
-            <span className="stat-label">Total Students</span>
-            <strong className="stat-value" id="totalStudents">{summary.totalStudents}</strong>
+      <main className="mdps-admin-main">
+        <section className="mdps-admin-hero">
+          <div className="mdps-hero-logo">
+            <img
+              src="/assets/Background/mdps.svg"
+              alt=""
+              aria-hidden="true"
+            />
           </div>
 
-          <div className="stat-card">
-            <span className="stat-label">Active Students</span>
-            <strong className="stat-value" id="activeStudents">{summary.activeStudents}</strong>
-          </div>
+          <div className="mdps-hero-copy">
+            <p className="mdps-hero-eyebrow">
+              S.Y. 2026–2027 · JUSTIFI ADMIN
+            </p>
+            <h1>Mother of Divine Providence School</h1>
+            <p>
+              Welcome, <strong>{adminName}</strong>. Review registered students,
+              monitor learning progress, and manage academic information from
+              one dashboard.
+            </p>
 
-          <div className="stat-card">
-            <span className="stat-label">Overall Completion</span>
-            <strong className="stat-value" id="overallCompletion">{summary.overallCompletion}%</strong>
-          </div>
-        </section>
+            <div className="mdps-hero-actions">
+              <button
+                className="mdps-btn mdps-btn-light"
+                type="button"
+                onClick={() => navigate('/teacher/students')}
+              >
+                <span aria-hidden="true">◉</span>
+                View Student List
+              </button>
 
-        <section className="chart-card">
-          <div className="chart-head">
-            <div>
-              <p className="card-kicker">LIVE FIREBASE DATA</p>
-              <h2>Student Monitoring Overview</h2>
+              <button
+                className="mdps-btn mdps-btn-outline"
+                type="button"
+                onClick={() => navigate('/teacher/manage-students')}
+              >
+                <span aria-hidden="true">↻</span>
+                Manage Students
+              </button>
             </div>
-            <button className="print-data-btn" type="button" onClick={onPrintData}>
-              Print Data
+          </div>
+        </section>
+
+        <section className="mdps-process-section" aria-labelledby="admin-process-title">
+          <div className="mdps-section-heading">
+            <span className="mdps-heading-icon" aria-hidden="true">◇</span>
+            <h2 id="admin-process-title">Administration Process</h2>
+          </div>
+
+          <div className="mdps-process-grid">
+            <button
+              className="mdps-process-card"
+              type="button"
+              onClick={() => navigate('/teacher/students')}
+            >
+              <span className="mdps-process-number">1</span>
+              <strong>Review Students</strong>
+              <p>Open the complete student list and review registered accounts.</p>
+              <span className="mdps-process-arrow" aria-hidden="true">›</span>
+            </button>
+
+            <button
+              className="mdps-process-card"
+              type="button"
+              onClick={() => navigate('/teacher/students')}
+            >
+              <span className="mdps-process-number">2</span>
+              <strong>Monitor Progress</strong>
+              <p>Check learning activity, quiz scores, and completion status.</p>
+              <span className="mdps-process-arrow" aria-hidden="true">›</span>
+            </button>
+
+            <button
+              className="mdps-process-card"
+              type="button"
+              onClick={() => navigate('/teacher/manage-students')}
+            >
+              <span className="mdps-process-number">3</span>
+              <strong>Manage Records</strong>
+              <p>Update grade levels, sections, and student information.</p>
+              <span className="mdps-process-arrow" aria-hidden="true">›</span>
+            </button>
+
+            <button
+              className="mdps-process-card"
+              type="button"
+              onClick={onPrintData}
+            >
+              <span className="mdps-process-number">4</span>
+              <strong>Export Reports</strong>
+              <p>Download the latest student monitoring data as an Excel file.</p>
             </button>
           </div>
-          <div className="chart-wrap">
+        </section>
+
+        <section className="mdps-overview-panel">
+          <div className="mdps-panel-heading">
+            <div>
+              <p className="mdps-panel-kicker">LIVE FIREBASE DATA</p>
+              <h2>Student Monitoring Overview</h2>
+            </div>
+
+            <button className="mdps-export-btn" type="button" onClick={onPrintData}>
+              Export Data
+            </button>
+          </div>
+
+          <div className="mdps-stats-grid">
+            <article className="mdps-stat-card">
+              <span>Total Students</span>
+              <strong>{summary.totalStudents}</strong>
+              <small>Registered accounts</small>
+            </article>
+
+            <article className="mdps-stat-card">
+              <span>Active Students</span>
+              <strong>{summary.activeStudents}</strong>
+              <small>Currently active</small>
+            </article>
+
+            <article className="mdps-stat-card">
+              <span>Overall Completion</span>
+              <strong>{summary.overallCompletion}%</strong>
+              <small>Completed profiles</small>
+            </article>
+
+            <article className="mdps-stat-card">
+              <span>Average Quiz Score</span>
+              <strong>{summary.averageQuizScore}%</strong>
+              <small>Across recorded quizzes</small>
+            </article>
+          </div>
+
+          <div className="mdps-chart-wrap">
             <canvas id="adminOverviewChart" ref={canvasRef} />
           </div>
         </section>
 
-        <section className="content-card">
-          <p className="card-kicker">QUICK ACCESS</p>
-          <h2>Main Sections</h2>
+        <section className="mdps-quick-panel">
+          <div className="mdps-panel-heading">
+            <div>
+              <p className="mdps-panel-kicker">QUICK ACCESS</p>
+              <h2>Administrative Tools</h2>
+            </div>
+          </div>
 
-          <div className="action-grid">
-            <button className="feature-card" onClick={() => navigate('/teacher/profile')}>
-              <h3>Profile</h3>
-              <p>View and manage your admin information.</p>
+          <div className="mdps-quick-grid">
+            <button type="button" onClick={() => navigate('/teacher/profile')}>
+              <span className="mdps-quick-icon" aria-hidden="true">A</span>
+              <span>
+                <strong>Admin Profile</strong>
+                <small>View and update your account information.</small>
+              </span>
             </button>
 
-            <button className="feature-card" onClick={() => navigate('/teacher/students')}>
-              <h3>Student List</h3>
-              <p>Select a student to view their progress, scores, and performance.</p>
+            <button type="button" onClick={() => navigate('/teacher/students')}>
+              <span className="mdps-quick-icon" aria-hidden="true">S</span>
+              <span>
+                <strong>Student List</strong>
+                <small>Review individual progress, scores, and performance.</small>
+              </span>
             </button>
 
-            <button className="feature-card" onClick={() => navigate('/teacher/manage-students')}>
-              <h3>Manage Students</h3>
-              <p>Manipulate student grades, sections, and academic information.</p>
+            <button type="button" onClick={() => navigate('/teacher/manage-students')}>
+              <span className="mdps-quick-icon" aria-hidden="true">M</span>
+              <span>
+                <strong>Manage Students</strong>
+                <small>Edit grade level, section, and academic information.</small>
+              </span>
             </button>
           </div>
         </section>
@@ -372,6 +569,6 @@ export default function TeacherDashboard() {
       <div className={['floating-panel', floatingType, floatingMessage ? '' : 'hidden'].join(' ')}>
         <span id="floatingPanelMessage">{floatingMessage}</span>
       </div>
-    </>
+    </div>
   );
 }

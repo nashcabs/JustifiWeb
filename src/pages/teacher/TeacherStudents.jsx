@@ -3,12 +3,42 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { getStudents, logout } from '../../services/justifiFirebase.js';
 
-
 function getAverageProgress(student) {
   const progress = Array.isArray(student?.progress) ? student.progress : [];
   if (!progress.length) return 0;
-  const total = progress.reduce((sum, v) => sum + Number((v?.score ?? v) || 0), 0);
+
+  const total = progress.reduce(
+    (sum, value) => sum + Number((value?.score ?? value) || 0),
+    0
+  );
+
   return total / progress.length;
+}
+
+function getStudentName(student, index = 0) {
+  return (
+    student?.fullName ||
+    [
+      student?.firstName,
+      student?.middleName,
+      student?.lastName
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .trim() ||
+    student?.email ||
+    `Student ${index + 1}`
+  );
+}
+
+function getInitials(name) {
+  return String(name || 'S')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join('')
+    .toUpperCase();
 }
 
 export default function TeacherStudents() {
@@ -21,13 +51,16 @@ export default function TeacherStudents() {
   const [progressSort, setProgressSort] = useState('');
   const [grade, setGrade] = useState('');
   const [section, setSection] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     if (loading) return;
+
     if (!user) {
       navigate('/login', { replace: true });
       return;
     }
+
     if ((user.role || 'student') !== 'teacher') {
       navigate('/dashboard/student', { replace: true });
     }
@@ -35,20 +68,44 @@ export default function TeacherStudents() {
 
   useEffect(() => {
     let cancelled = false;
+
     async function run() {
       try {
         if (!user) return;
+
         const rows = await getStudents(user);
-        if (!cancelled) setStudents(Array.isArray(rows) ? rows : []);
-      } catch (err) {
-        console.error(err);
-        if (!cancelled) setStudents([]);
+        if (cancelled) return;
+
+        setLoadError('');
+        setStudents(Array.isArray(rows) ? rows : []);
+      } catch (error) {
+        console.error(error);
+
+        if (!cancelled) {
+          setLoadError(
+            error?.code === 'permission-denied'
+              ? 'Firestore blocked access to the student list. Check teacher permissions and the users collection rules.'
+              : 'Failed to load students.'
+          );
+          setStudents([]);
+        }
       }
     }
+
     run();
+
     return () => {
       cancelled = true;
     };
+  }, [user]);
+
+  const adminName = useMemo(() => {
+    return (
+      user?.fullName ||
+      [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() ||
+      user?.email ||
+      'Administrator'
+    );
   }, [user]);
 
   const filtered = useMemo(() => {
@@ -57,22 +114,35 @@ export default function TeacherStudents() {
     const sectionKey = String(section || '').toLowerCase().trim();
 
     let list = (Array.isArray(students) ? students : []).filter((student) => {
-      const fullName =
-        student.fullName ||
-        [student.firstName, student.middleName, student.lastName].filter(Boolean).join(' ').trim() ||
-        '';
+      const fullName = getStudentName(student).toLowerCase();
+      const email = String(student?.email || '').toLowerCase();
 
-      const matchesName = !keyword || fullName.toLowerCase().includes(keyword);
-      const matchesGrade = !gradeKey || String(student.gradeLevel || '').toLowerCase().includes(gradeKey);
-      const matchesSection = !sectionKey || String(student.section || '').toLowerCase().includes(sectionKey);
-      return matchesName && matchesGrade && matchesSection;
+      const matchesSearch =
+        !keyword ||
+        fullName.includes(keyword) ||
+        email.includes(keyword);
+
+      const matchesGrade =
+        !gradeKey ||
+        String(student?.gradeLevel || '').toLowerCase().includes(gradeKey);
+
+      const matchesSection =
+        !sectionKey ||
+        String(student?.section || '').toLowerCase().includes(sectionKey);
+
+      return matchesSearch && matchesGrade && matchesSection;
     });
 
     if (progressSort === 'high') {
-      list = list.slice().sort((a, b) => getAverageProgress(b) - getAverageProgress(a));
+      list = [...list].sort(
+        (a, b) => getAverageProgress(b) - getAverageProgress(a)
+      );
     }
+
     if (progressSort === 'low') {
-      list = list.slice().sort((a, b) => getAverageProgress(a) - getAverageProgress(b));
+      list = [...list].sort(
+        (a, b) => getAverageProgress(a) - getAverageProgress(b)
+      );
     }
 
     return list;
@@ -82,146 +152,296 @@ export default function TeacherStudents() {
     try {
       await logout();
     } catch {
-      // ignore
+      // Ignore logout failures and continue to login.
     }
+
     navigate('/login', { replace: true });
   }
 
   if (loading) return null;
 
   return (
-    <>
-      <header className="topbar">
-        <a className="brand" href="#" onClick={(e) => e.preventDefault()}>
-          <h1 className="brand-logo">JustiFi</h1>
-        </a>
+    <div className="mdps-admin-page mdps-students-page">
+      <header className="mdps-admin-header">
+        <button
+          className="mdps-admin-brand"
+          type="button"
+          onClick={() => navigate('/dashboard/teacher')}
+          aria-label="Go to admin dashboard"
+        >
+          <span className="mdps-brand-logo-wrap">
+            <img
+              src="/assets/Background/mdps.svg"
+              alt="Mother of Divine Providence School logo"
+            />
+          </span>
 
-        <div className="topbar-right">
-          <a className="manage-link" href="#" onClick={(e) => e.preventDefault()}>
-            Student List
-          </a>
+          <span className="mdps-brand-divider" aria-hidden="true" />
+
+          <span className="mdps-brand-copy">
+            <strong>Mother of Divine Providence School</strong>
+            <span>SCHOOL MANAGEMENT SYSTEM</span>
+          </span>
+        </button>
+
+        <nav className="mdps-admin-nav" aria-label="Student list navigation">
           <button
-            id="menuBtn"
-            className="menu-btn"
             type="button"
-            aria-label="Open menu"
-            onClick={() => setMenuOpen(true)}
+            onClick={() => navigate('/dashboard/teacher')}
           >
-            ☰
+            Dashboard
           </button>
-        </div>
+
+          <button className="is-active" type="button">
+            Students
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/teacher/manage-students')}
+          >
+            Manage
+          </button>
+        </nav>
+
+        <button
+          className="mdps-mobile-menu"
+          type="button"
+          aria-label="Open menu"
+          onClick={() => setMenuOpen(true)}
+        >
+          ☰
+        </button>
       </header>
 
       <div
-        id="menuOverlay"
         className={['menu-overlay', menuOpen ? '' : 'hidden'].join(' ')}
         onClick={() => setMenuOpen(false)}
       />
 
-      <aside id="sideMenu" className={['side-menu', menuOpen ? 'open' : ''].join(' ')}>
+      <aside className={['side-menu', menuOpen ? 'open' : ''].join(' ')}>
         <div className="side-menu-header">
-          <h3>Menu</h3>
-          <button id="closeMenuBtn" className="close-menu-btn" type="button" onClick={() => setMenuOpen(false)}>
+          <div>
+            <span className="mdps-side-menu-label">ADMIN ACCOUNT</span>
+            <h3>{adminName}</h3>
+          </div>
+
+          <button
+            className="close-menu-btn"
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setMenuOpen(false)}
+          >
             ✕
           </button>
         </div>
 
         <div className="side-menu-body">
-          <button className="menu-link" onClick={() => navigate('/dashboard/teacher')}>Dashboard</button>
-          <button className="menu-link" onClick={() => navigate('/teacher/profile')}>Profile</button>
-          <button className="menu-link logout-btn" onClick={onLogout}>Logout</button>
+          <button
+            className="menu-link"
+            type="button"
+            onClick={() => navigate('/dashboard/teacher')}
+          >
+            Dashboard
+          </button>
+
+          <button
+            className="menu-link"
+            type="button"
+            onClick={() => navigate('/teacher/profile')}
+          >
+            Profile
+          </button>
+
+          <button
+            className="menu-link"
+            type="button"
+            onClick={() => navigate('/teacher/manage-students')}
+          >
+            Manage Students
+          </button>
+
+          <button
+            className="menu-link logout-btn"
+            type="button"
+            onClick={onLogout}
+          >
+            Logout
+          </button>
         </div>
       </aside>
 
-      <div className="back-row">
-        <a className="back-btn" href="#" onClick={(e) => { e.preventDefault(); navigate('/dashboard/teacher'); }}>
-          Back
-        </a>
-      </div>
+      <main className="mdps-admin-main mdps-page-main">
+        <section className="mdps-admin-hero mdps-page-hero">
+          <div className="mdps-hero-logo">
+            <img
+              src="/assets/Background/mdps.svg"
+              alt=""
+              aria-hidden="true"
+            />
+          </div>
 
-      <main className="students-shell">
-        <section className="hero-card">
-          <p className="eyebrow">STUDENT LIST</p>
-          <h1>Registered Students</h1>
-          <p className="hero-subtext">
-            Select a student from the list below to view their learning progress, scores, and achievements.
-          </p>
+          <div className="mdps-hero-copy">
+            <p className="mdps-hero-eyebrow">
+              S.Y. 2026–2027 · REGISTERED STUDENTS
+            </p>
+
+            <h1>Student Monitoring Directory</h1>
+
+            <p>
+              Search registered students and open an individual record to review
+              learning progress, quiz performance, and achievements.
+            </p>
+
+            <div className="mdps-hero-actions">
+              <button
+                className="mdps-btn mdps-btn-light"
+                type="button"
+                onClick={() => navigate('/teacher/manage-students')}
+              >
+                Manage Student Records
+              </button>
+
+              <button
+                className="mdps-btn mdps-btn-outline"
+                type="button"
+                onClick={() => navigate('/dashboard/teacher')}
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
         </section>
 
-        <section className="list-card">
-          <div className="list-header">
-            <h2>Students</h2>
-            <div className="filters-container">
-              <input
-                type="text"
-                id="studentSearch"
-                className="search-input"
-                placeholder="Search student name..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+        {loadError ? (
+          <section className="mdps-alert-panel" role="alert">
+            <strong>Unable to load the student directory</strong>
+            <p>{loadError}</p>
+          </section>
+        ) : null}
+
+        <section className="mdps-overview-panel mdps-directory-panel">
+          <div className="mdps-panel-heading">
+            <div>
+              <p className="mdps-panel-kicker">FILTER DIRECTORY</p>
+              <h2>Find a Student</h2>
+            </div>
+
+            <span className="mdps-result-count">
+              {filtered.length} {filtered.length === 1 ? 'student' : 'students'}
+            </span>
+          </div>
+
+          <div className="mdps-directory-filters">
+            <div className="mdps-field mdps-filter-search">
+              <label htmlFor="studentSearch">Student name or email</label>
+              <div className="mdps-input-with-icon">
+                <span aria-hidden="true">⌕</span>
+                <input
+                  id="studentSearch"
+                  type="search"
+                  placeholder="Search student name or email"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="mdps-field">
+              <label htmlFor="progressFilter">Progress order</label>
               <select
                 id="progressFilter"
-                className="search-input"
                 value={progressSort}
-                onChange={(e) => setProgressSort(e.target.value)}
+                onChange={(event) => setProgressSort(event.target.value)}
               >
-                <option value="">Progress: Default</option>
-                <option value="high">Highest Progress</option>
-                <option value="low">Lowest Progress</option>
+                <option value="">Default order</option>
+                <option value="high">Highest progress</option>
+                <option value="low">Lowest progress</option>
               </select>
+            </div>
+
+            <div className="mdps-field">
+              <label htmlFor="gradeFilter">Grade level</label>
               <input
-                type="text"
                 id="gradeFilter"
-                className="search-input"
-                placeholder="Filter grade..."
-                value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-              />
-              <input
                 type="text"
+                placeholder="Example: Grade 11"
+                value={grade}
+                onChange={(event) => setGrade(event.target.value)}
+              />
+            </div>
+
+            <div className="mdps-field">
+              <label htmlFor="sectionFilter">Section</label>
+              <input
                 id="sectionFilter"
-                className="search-input"
-                placeholder="Filter section..."
+                type="text"
+                placeholder="Example: Section A"
                 value={section}
-                onChange={(e) => setSection(e.target.value)}
+                onChange={(event) => setSection(event.target.value)}
               />
             </div>
           </div>
+        </section>
 
-          <div id="student-list" className="student-list">
-            {!filtered.length ? (
-              <div className="empty-state">No students found.</div>
-            ) : (
-              filtered.map((student, idx) => {
-                const fullName =
-                  student.fullName ||
-                  [student.firstName, student.middleName, student.lastName].filter(Boolean).join(' ').trim() ||
-                  student.email ||
-                  `Student ${idx + 1}`;
-                const email = student.email || 'No email available';
-                const role = student.role || 'student';
-                const id = student.id || student.uid || `student-${idx + 1}`;
+        <section className="mdps-overview-panel mdps-directory-list-panel">
+          <div className="mdps-panel-heading">
+            <div>
+              <p className="mdps-panel-kicker">STUDENT ACCOUNTS</p>
+              <h2>Registered Students</h2>
+            </div>
+          </div>
+
+          {!filtered.length ? (
+            <div className="mdps-empty-state">
+              <span aria-hidden="true">⌕</span>
+              <h3>No students found</h3>
+              <p>Try changing the search term or one of the filters.</p>
+            </div>
+          ) : (
+            <div className="mdps-directory-grid">
+              {filtered.map((student, index) => {
+                const id = student.id || student.uid || `student-${index + 1}`;
+                const fullName = getStudentName(student, index);
+                const average = Math.round(getAverageProgress(student));
 
                 return (
-                  <div
+                  <button
                     key={id}
-                    className="student-card"
-                    onClick={() => navigate(`/teacher/students/view?id=${encodeURIComponent(id)}`)}
+                    className="mdps-directory-card"
+                    type="button"
+                    onClick={() =>
+                      navigate(
+                        `/teacher/students/view?id=${encodeURIComponent(id)}`
+                      )
+                    }
                   >
-                    <div className="student-main">
-                      <h3>{fullName}</h3>
-                      <p>{email}</p>
-                      <p>Role: {role}</p>
-                    </div>
-                    <div className="student-action">View Progress →</div>
-                  </div>
+                    <span className="mdps-directory-avatar">
+                      {getInitials(fullName)}
+                    </span>
+
+                    <span className="mdps-directory-copy">
+                      <strong>{fullName}</strong>
+                      <small>{student.email || 'No email available'}</small>
+
+                      <span className="mdps-directory-meta">
+                        <em>{student.gradeLevel || 'No grade'}</em>
+                        <em>{student.section || 'No section'}</em>
+                        <em>{average}% progress</em>
+                      </span>
+                    </span>
+
+                    <span className="mdps-directory-action">
+                      View Progress
+                      <span aria-hidden="true">→</span>
+                    </span>
+                  </button>
                 );
-              })
-            )}
-          </div>
+              })}
+            </div>
+          )}
         </section>
       </main>
-    </>
+    </div>
   );
 }

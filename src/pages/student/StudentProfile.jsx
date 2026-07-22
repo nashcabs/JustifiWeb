@@ -3,26 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { logout, updateCurrentUserProfile } from '../../services/justifiFirebase.js';
 
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { storage } from '../../services/firebaseClient.js';
+
 
 const DEFAULT_AVATAR = '/assets/Profile/default-avatar.webp';
 
-const BADGE_LIBRARY = {
-  starter: {
-    label: 'Starter',
-    description: 'Created a JustiFi account',
-    image: '/assets/Badges/badge1.png'
-  },
-  quiz_rookie: {
-    label: 'Quiz Rookie',
-    description: 'Recorded the first quiz score',
-    image: '/assets/Badges/badge2.png'
-  },
-  consistent: {
-    label: 'Consistent',
-    description: 'Reached 70% average progress',
-    image: '/assets/Badges/badge3.png'
-  }
-};
+
 
 function escapeHtml(value) {
   return String(value || '')
@@ -112,10 +99,9 @@ export default function StudentProfile() {
   }, [user]);
 
   const profileImageSrc = useMemo(() => {
-    return user?.profileImage?.localPath || user?.avatarDataUrl || DEFAULT_AVATAR;
+  return user?.profileImage?.cloudUrl || user?.profileImage?.localPath || user?.avatarDataUrl || DEFAULT_AVATAR;
   }, [user]);
 
-  const badges = Array.isArray(user?.badges) ? user.badges : [];
 
   function showFloatingPanel(message, type = 'success') {
     setFloatingMessage(String(message || ''));
@@ -132,30 +118,6 @@ export default function StudentProfile() {
     navigate('/login', { replace: true });
   }
 
-  function createBadgeSlot(badgeId, earned) {
-    const badge = BADGE_LIBRARY[badgeId] || {
-      label: badgeId ? formatBadgeLabel(badgeId) : 'Empty',
-      description: badgeId ? 'Badge unlocked' : 'No badge yet',
-      image: '/assets/Badges/badge4.png'
-    };
-
-    return (
-      <div
-        key={`${badgeId || 'empty'}-${earned ? 'earned' : 'empty'}`}
-        className={['profile-badge', earned ? 'earned' : 'empty'].join(' ')}
-        title={badge.description}
-      >
-        <div className="profile-badge-icon">
-          {earned ? (
-            <img className="profile-badge-img" src={badge.image} alt={`${badge.label} badge`} />
-          ) : (
-            '+'
-          )}
-        </div>
-        <span className="profile-badge-label">{badge.label}</span>
-      </div>
-    );
-  }
 
   async function onSave() {
     if (!user) return;
@@ -215,32 +177,45 @@ export default function StudentProfile() {
     }
   }
 
-  async function onProfileImageChange(e) {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
+async function onProfileImageChange(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file || !user) return;
 
-    if (!file.type.startsWith('image/')) {
-      showFloatingPanel('Please select an image file only.', 'error');
-      e.target.value = '';
-      return;
-    }
-
-    try {
-      const dataUrl = await fileToDataUrl(file);
-      const updatedUser = await updateCurrentUserProfile({
-        profileImage: {
-          localPath: dataUrl,
-          cloudUrl: ''
-        }
-      });
-      setUser?.(updatedUser);
-    } catch (err) {
-      console.error(err);
-      showFloatingPanel('Failed to update profile image.', 'error');
-    } finally {
-      e.target.value = '';
-    }
+  if (!file.type.startsWith('image/')) {
+    showFloatingPanel('Please select an image file only.', 'error');
+    e.target.value = '';
+    return;
   }
+
+if (file.size > 10 * 1024 * 1024) {
+  showFloatingPanel('Image is too large. Please upload below 10MB.', 'error');
+  e.target.value = '';
+  return;
+}
+
+  try {
+    const fileExt = file.name.split('.').pop();
+    const imageRef = ref(storage, `profileImages/${user.uid}/profile.${fileExt}`);
+
+    await uploadBytes(imageRef, file);
+    const downloadUrl = await getDownloadURL(imageRef);
+
+    const updatedUser = await updateCurrentUserProfile({
+      profileImage: {
+        localPath: '',
+        cloudUrl: downloadUrl
+      }
+    });
+
+    setUser?.(updatedUser);
+    showFloatingPanel('Profile image updated.', 'success');
+  } catch (err) {
+    console.error(err);
+    showFloatingPanel('Failed to update profile image.', 'error');
+  } finally {
+    e.target.value = '';
+  }
+}
 
   if (loading) return null;
 
@@ -275,9 +250,6 @@ export default function StudentProfile() {
         <div className="side-menu-body">
           <button className="menu-link" onClick={() => navigate('/dashboard/student')}>
             Dashboard
-          </button>
-          <button className="menu-link" onClick={() => navigate('/student/badges')}>
-            Badges
           </button>
           <button className="menu-link logout-btn" onClick={onLogout}>
             Logout
@@ -314,18 +286,6 @@ export default function StudentProfile() {
             {user?.profileCompleted ? 'Profile Completed' : 'Complete your profile'}
           </p>
 
-          <div className="profile-badges">
-            <div className="profile-badges-head">
-              <h3>Badges</h3>
-              <span id="badgeCountLabel">{badges.length} earned</span>
-            </div>
-            <div id="profileBadgeGrid" className="profile-badge-grid" aria-label="Earned badges">
-              {[...badges.slice(0, 6).map((id) => createBadgeSlot(id, true)),
-                ...Array.from({ length: Math.max(0, 6 - Math.min(6, badges.length)) }).map((_, idx) =>
-                  createBadgeSlot(`empty-${idx}`, false)
-                )]}
-            </div>
-          </div>
         </section>
 
         <section className="info-card">

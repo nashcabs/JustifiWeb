@@ -17,6 +17,7 @@ export default function AssignRoles() {
   const [newRole, setNewRole] = useState('student');
   const [newGradeLevel, setNewGradeLevel] = useState('');
   const [newSection, setNewSection] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   const [toast, setToast] = useState({ message: '', type: 'success' });
 
@@ -40,8 +41,18 @@ export default function AssignRoles() {
     if (!user) return;
 
     const unsubscribe = subscribeToUsers(
-      (users) => setAllUsers(Array.isArray(users) ? users : []),
-      () => setAllUsers([])
+      (users) => {
+        setLoadError('');
+        setAllUsers(Array.isArray(users) ? users : []);
+      },
+      (err) => {
+        if (err?.code === 'permission-denied') {
+          setLoadError('Firestore blocked the users collection. Check developer read permissions.');
+        } else {
+          setLoadError('Unable to load users right now.');
+        }
+        setAllUsers([]);
+      }
     );
 
     return () => {
@@ -124,6 +135,12 @@ export default function AssignRoles() {
           <h1>Assign Roles</h1>
           <p className="hero-subtext">Update a user account role. Works with Firebase when configured.</p>
         </section>
+
+        {loadError ? (
+          <section className="content-card" role="alert">
+            <p style={{ margin: 0, color: '#ffd0d0' }}>{loadError}</p>
+          </section>
+        ) : null}
 
         <section className="panel-card">
           <div className="panel-head">

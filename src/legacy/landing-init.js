@@ -256,17 +256,22 @@ export function initLandingPage() {
   // EXPLORE BUTTON SCROLL
   // ===============================
   (function initExploreButton() {
-    const exploreBtn = document.querySelector('.explore-btn');
-    if (!exploreBtn) return;
+  const exploreBtn = document.querySelector('.justifi-btn');
 
-    const onClick = () => {
-      document.querySelector('#about')?.scrollIntoView({ behavior: 'smooth' });
-    };
+  if (!exploreBtn) return;
 
-    exploreBtn.addEventListener('click', onClick);
-    cleanups.push(() => exploreBtn.removeEventListener('click', onClick));
-  })();
+  const onClick = () => {
+    document
+      .querySelector('#trailer')
+      ?.scrollIntoView({ behavior: 'smooth' });
+  };
 
+  exploreBtn.addEventListener('click', onClick);
+
+  cleanups.push(() =>
+    exploreBtn.removeEventListener('click', onClick)
+  );
+})();
   // ===============================
   // NAVBAR BACKGROUND ON SCROLL
   // ===============================
@@ -284,6 +289,165 @@ export function initLandingPage() {
 
     window.addEventListener('scroll', onScroll, { passive: true });
     cleanups.push(() => window.removeEventListener('scroll', onScroll));
+  })();
+
+
+  // ===============================
+  // ROLLING COMPACT NAVBAR
+  // Full on Home; circular logo from Trailer onward.
+  // Hover/focus temporarily opens it. Clicking the logo pins/unpins it.
+  // ===============================
+  (function initRollingCompactNavbar() {
+    const navbar = document.querySelector('.navbar');
+    const toggle = navbar?.querySelector('.nav-toggle');
+    const trailer = document.querySelector('#trailer');
+    const desktopQuery = window.matchMedia('(min-width: 769px)');
+
+    if (!navbar || !toggle || !trailer) return;
+
+    let ticking = false;
+    let pointerInside = false;
+
+    const isCompact = () => navbar.classList.contains('is-compact');
+    const isPinnedOpen = () => navbar.classList.contains('is-open');
+
+    const setToggleState = (expanded) => {
+      toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      toggle.setAttribute(
+        'aria-label',
+        expanded ? 'Close navigation' : 'Open navigation'
+      );
+    };
+
+    const closePinnedNavbar = () => {
+      navbar.classList.remove('is-open');
+      if (isCompact() && !pointerInside && !navbar.matches(':focus-within')) {
+        setToggleState(false);
+      }
+    };
+
+    const updateCompactState = () => {
+      ticking = false;
+
+      if (!desktopQuery.matches) {
+        navbar.classList.remove('is-compact', 'is-open');
+        setToggleState(true);
+        return;
+      }
+
+      // Collapse as soon as the Trailer page reaches the upper viewport.
+      const shouldCompact = trailer.getBoundingClientRect().top <= 110;
+
+      if (shouldCompact) {
+        if (!isCompact()) {
+          navbar.classList.add('is-compact');
+          navbar.classList.remove('is-open');
+        }
+
+        setToggleState(
+          isPinnedOpen() || pointerInside || navbar.matches(':focus-within')
+        );
+      } else {
+        navbar.classList.remove('is-compact', 'is-open');
+        setToggleState(true);
+      }
+    };
+
+    const requestCompactUpdate = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(updateCompactState);
+    };
+
+    const onToggleClick = () => {
+      if (!desktopQuery.matches) return;
+
+      // Above the Trailer section, clicking the coin behaves like Home.
+      if (!isCompact()) {
+        document.querySelector('#home')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+        return;
+      }
+
+      navbar.classList.toggle('is-open');
+      setToggleState(isPinnedOpen() || pointerInside);
+    };
+
+    const onPointerEnter = () => {
+      pointerInside = true;
+      if (isCompact()) setToggleState(true);
+    };
+
+    const onPointerLeave = () => {
+      pointerInside = false;
+      if (isCompact() && !isPinnedOpen() && !navbar.matches(':focus-within')) {
+        setToggleState(false);
+      }
+    };
+
+    const onFocusIn = () => {
+      if (isCompact()) setToggleState(true);
+    };
+
+    const onFocusOut = () => {
+      window.requestAnimationFrame(() => {
+        if (
+          isCompact() &&
+          !isPinnedOpen() &&
+          !pointerInside &&
+          !navbar.matches(':focus-within')
+        ) {
+          setToggleState(false);
+        }
+      });
+    };
+
+    const onDocumentPointerDown = (event) => {
+      if (!isCompact() || !isPinnedOpen()) return;
+      if (navbar.contains(event.target)) return;
+      closePinnedNavbar();
+    };
+
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape' || !isCompact()) return;
+      closePinnedNavbar();
+      toggle.focus();
+    };
+
+    const onNavLinkClick = (event) => {
+      if (!event.target.closest('a')) return;
+      closePinnedNavbar();
+    };
+
+    toggle.addEventListener('click', onToggleClick);
+    navbar.addEventListener('pointerenter', onPointerEnter);
+    navbar.addEventListener('pointerleave', onPointerLeave);
+    navbar.addEventListener('focusin', onFocusIn);
+    navbar.addEventListener('focusout', onFocusOut);
+    navbar.addEventListener('click', onNavLinkClick);
+    document.addEventListener('pointerdown', onDocumentPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('scroll', requestCompactUpdate, { passive: true });
+    window.addEventListener('resize', requestCompactUpdate);
+    desktopQuery.addEventListener?.('change', requestCompactUpdate);
+
+    cleanups.push(() => {
+      toggle.removeEventListener('click', onToggleClick);
+      navbar.removeEventListener('pointerenter', onPointerEnter);
+      navbar.removeEventListener('pointerleave', onPointerLeave);
+      navbar.removeEventListener('focusin', onFocusIn);
+      navbar.removeEventListener('focusout', onFocusOut);
+      navbar.removeEventListener('click', onNavLinkClick);
+      document.removeEventListener('pointerdown', onDocumentPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('scroll', requestCompactUpdate);
+      window.removeEventListener('resize', requestCompactUpdate);
+      desktopQuery.removeEventListener?.('change', requestCompactUpdate);
+    });
+
+    updateCompactState();
   })();
 
   // ===============================
@@ -322,7 +486,8 @@ export function initLandingPage() {
     let roomProgress = 0;
     const NAV_REVEAL_START = 0.72;
     const NAV_REVEAL_END = 0.82;
-    const END_HOLD_FRACTION = 0.18;
+    const END_HOLD_FRACTION =
+  window.innerWidth <= 768 ? 0 : 0.18;
 
     const syncNavUI = () => {
       const homeBottom = homeSection.getBoundingClientRect().bottom;

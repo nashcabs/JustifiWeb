@@ -16,6 +16,7 @@ export default function DeveloperDashboard() {
     teacherAccounts: 0,
     developerAccounts: 0
   });
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     if (loading) return;
@@ -36,6 +37,7 @@ export default function DeveloperDashboard() {
     const unsubscribe = subscribeToUsers(
       (allUsers) => {
         const users = Array.isArray(allUsers) ? allUsers : [];
+        setLoadError('');
         const nonDevUsers = users.filter((u) => (u.role || 'student') !== 'developer');
         setCounts({
           totalUsers: nonDevUsers.length,
@@ -44,7 +46,12 @@ export default function DeveloperDashboard() {
           developerAccounts: users.filter((u) => (u.role || 'student') === 'developer').length
         });
       },
-      () => {
+      (err) => {
+        if (err?.code === 'permission-denied') {
+          setLoadError('Firestore blocked the users collection. Check your users rules and developer access.');
+        } else {
+          setLoadError('Unable to load user counts right now.');
+        }
         setCounts({ totalUsers: 0, studentAccounts: 0, teacherAccounts: 0, developerAccounts: 0 });
       }
     );
@@ -130,6 +137,12 @@ export default function DeveloperDashboard() {
             Manage roles, organize accounts, and configure the developer-side controls of the JustiFi system.
           </p>
         </section>
+
+        {loadError ? (
+          <section className="content-card" role="alert">
+            <p style={{ margin: 0, color: '#ffd0d0' }}>{loadError}</p>
+          </section>
+        ) : null}
 
         <section className="stats-grid">
           <div className="stat-card">

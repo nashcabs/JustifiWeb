@@ -17,6 +17,7 @@ import AssignRoles from './pages/developer/AssignRoles.jsx';
 import ManageAccounts from './pages/developer/ManageAccounts.jsx';
 import SystemSettings from './pages/developer/SystemSettings.jsx';
 import UpdateAnnouncement from './pages/developer/UpdateAnnouncement.jsx';
+import StudentQuiz from "./pages/student/StudentQuiz";
 
 export default function App() {
   return (
@@ -133,6 +134,10 @@ export default function App() {
             </RequireRole>
           }
         />
+        <Route
+  path="/student/quizzes"
+  element={<StudentQuiz />}
+/>
       </Routes>
     </BrowserRouter>
   );

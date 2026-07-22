@@ -19,6 +19,7 @@ export default function TeacherManageStudents() {
   gradeLevel: 'Grade 11',
   section: ''
 });
+  const [loadError, setLoadError] = useState('');
 
   const [floatingMessage, setFloatingMessage] = useState('');
   const [floatingType, setFloatingType] = useState('success');
@@ -44,9 +45,15 @@ export default function TeacherManageStudents() {
     try {
       if (!user) return;
       const rows = await getStudents(user);
+      setLoadError('');
       setAllStudents(Array.isArray(rows) ? rows : []);
     } catch (err) {
       console.error(err);
+      setLoadError(
+        err?.code === 'permission-denied'
+          ? 'Firestore blocked the student management list. Check teacher read permissions and users rules.'
+          : 'Failed to load students.'
+      );
       setAllStudents([]);
       showFloatingPanel('Failed to load students.', 'error');
     }
@@ -82,10 +89,11 @@ export default function TeacherManageStudents() {
   }, [allStudents, search, gradeFilter]);
 
   function openEditModal(student) {
-   setEdit({
-  gradeLevel: student.gradeLevel || 'Grade 11',
-  section: student.section || ''
-});
+    setSelectedStudent(student);
+    setEdit({
+      gradeLevel: student.gradeLevel || 'Grade 11',
+      section: student.section || ''
+    });
     setModalOpen(true);
   }
 
@@ -104,16 +112,11 @@ export default function TeacherManageStudents() {
     setSaving(true);
     try {
       const updates = {
-  gradeLevel: String(edit.gradeLevel || ''),
-  section: String(edit.section || '').trim()
-};
+        gradeLevel: String(edit.gradeLevel || ''),
+        section: String(edit.section || '').trim()
+      };
 
-await updateUserProfileById(selectedStudent.id, updates);
-
-      await updateUserProfileById(selectedStudent.id, {
-        ...updates,
-        fullName: `${updates.firstName} ${updates.lastName}`.trim()
-      });
+      await updateUserProfileById(selectedStudent.id, updates);
 
       showFloatingPanel('Student information updated successfully!', 'success');
       closeModal();
@@ -129,54 +132,128 @@ await updateUserProfileById(selectedStudent.id, updates);
   if (loading) return null;
 
   return (
-    <>
-      <header className="topbar">
-        <a className="brand" href="#" onClick={(e) => { e.preventDefault(); navigate('/dashboard/teacher'); }}>
-          <h1 className="brand-logo">JustiFi</h1>
-        </a>
+    <div className="mdps-admin-page mdps-manage-page">
+      <header className="mdps-admin-header">
+        <button
+          className="mdps-admin-brand"
+          type="button"
+          onClick={() => navigate('/dashboard/teacher')}
+          aria-label="Go to admin dashboard"
+        >
+          <span className="mdps-brand-logo-wrap">
+            <img
+              src="/assets/Background/mdps.svg"
+              alt="Mother of Divine Providence School logo"
+            />
+          </span>
 
-        <div className="topbar-right">
-          <span className="welcome">Manage Students</span>
-        </div>
+          <span className="mdps-brand-divider" aria-hidden="true" />
+
+          <span className="mdps-brand-copy">
+            <strong>Mother of Divine Providence School</strong>
+            <span>SCHOOL MANAGEMENT SYSTEM</span>
+          </span>
+        </button>
+
+        <nav className="mdps-admin-nav" aria-label="Admin page navigation">
+          <button type="button" onClick={() => navigate('/dashboard/teacher')}>
+            Dashboard
+          </button>
+          <button type="button" onClick={() => navigate('/teacher/students')}>
+            Student List
+          </button>
+          <button className="is-active" type="button">
+            Manage
+          </button>
+        </nav>
+
+        <button
+          className="mdps-mobile-menu"
+          type="button"
+          aria-label="Open dashboard"
+          onClick={() => navigate('/dashboard/teacher')}
+        >
+          ←
+        </button>
       </header>
 
-      <div className="back-row">
-        <a className="back-btn" href="#" onClick={(e) => { e.preventDefault(); navigate('/dashboard/teacher'); }}>
-          Back
-        </a>
-      </div>
-
-      <main className="page-shell">
-        <section className="hero-card">
-          <p className="eyebrow">ADMIN MANAGEMENT</p>
-          <h1>Manage Students</h1>
-          <p className="hero-subtext">Edit student grade levels, sections, and other academic information.</p>
-        </section>
-
-        <section className="panel-card">
-          <div className="panel-head">
-            <h2>Find Student</h2>
+      <main className="mdps-admin-main mdps-page-main">
+        <section className="mdps-admin-hero mdps-page-hero">
+          <div className="mdps-hero-logo">
+            <img
+              src="/assets/Background/mdps.svg"
+              alt=""
+              aria-hidden="true"
+            />
           </div>
 
-          <div className="search-filter-section">
-            <div className="search-box">
-              <input
-                className="search-input"
-                type="text"
-                id="searchInput"
-                placeholder="Search by name or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <button className="search-btn" type="button" aria-label="Search" onClick={() => null}>
-                Search
+          <div className="mdps-hero-copy">
+            <p className="mdps-hero-eyebrow">
+              S.Y. 2026–2027 · STUDENT MANAGEMENT
+            </p>
+            <h1>Manage Student Records</h1>
+            <p>
+              Search registered students, review their academic information,
+              and update grade level and section assignments.
+            </p>
+
+            <div className="mdps-hero-actions">
+              <button
+                className="mdps-btn mdps-btn-light"
+                type="button"
+                onClick={() => navigate('/dashboard/teacher')}
+              >
+                Back to Dashboard
+              </button>
+
+              <button
+                className="mdps-btn mdps-btn-outline"
+                type="button"
+                onClick={load}
+              >
+                Refresh Students
               </button>
             </div>
+          </div>
+        </section>
 
-            <div className="filter-box">
-              <label htmlFor="gradeFilter">Filter by Grade:</label>
+        {loadError ? (
+          <section className="mdps-alert-panel" role="alert">
+            <strong>Unable to load students</strong>
+            <p>{loadError}</p>
+          </section>
+        ) : null}
+
+        <section className="mdps-overview-panel mdps-search-panel">
+          <div className="mdps-panel-heading">
+            <div>
+              <p className="mdps-panel-kicker">FIND A RECORD</p>
+              <h2>Search and Filter Students</h2>
+            </div>
+
+            <span className="mdps-result-count">
+              {filtered.length} {filtered.length === 1 ? 'student' : 'students'}
+            </span>
+          </div>
+
+          <div className="mdps-search-grid">
+            <div className="mdps-field">
+              <label htmlFor="searchInput">Name or email</label>
+              <div className="mdps-input-with-icon">
+                <span aria-hidden="true">⌕</span>
+                <input
+                  id="searchInput"
+                  type="search"
+                  placeholder="Search by name or email"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="mdps-field">
+              <label htmlFor="gradeFilter">Grade level</label>
               <select
-                className="grade-select"
                 id="gradeFilter"
                 value={gradeFilter}
                 onChange={(e) => setGradeFilter(e.target.value)}
@@ -189,136 +266,220 @@ await updateUserProfileById(selectedStudent.id, updates);
           </div>
         </section>
 
-        <section className="panel-card">
-          <div className="panel-head">
-            <h2>Students</h2>
-            <span id="studentCount" className="student-count">
-              {filtered.length} {filtered.length === 1 ? 'student' : 'students'}
-            </span>
+        <section className="mdps-overview-panel mdps-student-list-panel">
+          <div className="mdps-panel-heading">
+            <div>
+              <p className="mdps-panel-kicker">REGISTERED ACCOUNTS</p>
+              <h2>Students</h2>
+            </div>
           </div>
 
-          <div id="studentsList" className="students-list">
-            {filtered.map((student) => {
-              const id = student.id || student.uid;
-              return (
-                <div key={id} className="student-item" onClick={() => openEditModal(student)}>
-                  <div className="student-item-info">
-                    <div className="student-item-name">
-                      {student.firstName || ''} {student.lastName || ''}
-                    </div>
-                    <div className="student-item-details">
-                      <span>{student.email}</span>
-                      <span>{student.gradeLevel || 'N/A'}</span>
-                      <span>{student.section || 'N/A'}</span>
-                    </div>
-                  </div>
-                  <div className="student-item-badge">{student.role}</div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div id="emptyState" className="empty-state" style={{ display: filtered.length ? 'none' : 'block' }}>
-            <p>No students found. Try adjusting your search or filter.</p>
-          </div>
-        </section>
-
-        <div id="editFormModal" className={['modal', modalOpen ? '' : 'hidden'].join(' ')}>
-          <div className="modal-overlay" onClick={closeModal} />
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>
-                Edit Student - <span id="studentNameDisplay">{selectedStudent ? `${selectedStudent.firstName || ''} ${selectedStudent.lastName || ''}`.trim() : ''}</span>
-              </h2>
-              <button className="close-btn" type="button" onClick={closeModal}>
-                ✕
-              </button>
+          <div className="mdps-student-table-wrap">
+            <div className="mdps-student-table-head" aria-hidden="true">
+              <span>Student</span>
+              <span>Email</span>
+              <span>Grade</span>
+              <span>Section</span>
+              <span>Role</span>
+              <span />
             </div>
 
-            <form id="editStudentForm" className="edit-form" onSubmit={onSubmit}>
-              <div className="form-group">
-                <label htmlFor="editEmail">Email:</label>
-<input
-  type="email"
-  id="editEmail"
-  readOnly
-  className="readonly-field"
-  value={selectedStudent?.email || ""}
-/>
-              </div>
+            <div className="mdps-student-table-body">
+              {filtered.map((student) => {
+                const id = student.id || student.uid;
+                const fullName =
+                  [student.firstName, student.lastName]
+                    .filter(Boolean)
+                    .join(' ')
+                    .trim() ||
+                  student.fullName ||
+                  student.email ||
+                  'Unnamed Student';
 
-              <div className="form-group">
-                <label htmlFor="editFirstName">First Name:</label>
+                const initials = fullName
+                  .split(/\s+/)
+                  .slice(0, 2)
+                  .map((part) => part.charAt(0))
+                  .join('')
+                  .toUpperCase();
+
+                return (
+                  <button
+                    key={id}
+                    className="mdps-student-row"
+                    type="button"
+                    onClick={() => openEditModal(student)}
+                  >
+                    <span className="mdps-student-identity">
+                      <span className="mdps-student-avatar">{initials || 'S'}</span>
+                      <span>
+                        <strong>{fullName}</strong>
+                        <small>Click to edit student information</small>
+                      </span>
+                    </span>
+
+                    <span className="mdps-student-email">{student.email || 'Not available'}</span>
+                    <span>{student.gradeLevel || 'Not assigned'}</span>
+                    <span>{student.section || 'Not assigned'}</span>
+                    <span>
+                      <em className="mdps-role-pill">{student.role || 'student'}</em>
+                    </span>
+                    <span className="mdps-row-action">Edit</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {!filtered.length ? (
+            <div className="mdps-empty-state">
+              <span aria-hidden="true">⌕</span>
+              <h3>No students found</h3>
+              <p>Try changing the search term or selected grade level.</p>
+            </div>
+          ) : null}
+        </section>
+      </main>
+
+      <div
+        id="editFormModal"
+        className={['mdps-modal', modalOpen ? 'is-open' : ''].join(' ')}
+        aria-hidden={!modalOpen}
+      >
+        <button
+          className="mdps-modal-backdrop"
+          type="button"
+          aria-label="Close edit student dialog"
+          onClick={closeModal}
+        />
+
+        <section
+          className="mdps-modal-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-student-title"
+        >
+          <div className="mdps-modal-header">
+            <div>
+              <p className="mdps-panel-kicker">STUDENT RECORD</p>
+              <h2 id="edit-student-title">
+                Edit {selectedStudent
+                  ? `${selectedStudent.firstName || ''} ${selectedStudent.lastName || ''}`.trim()
+                  : 'Student'}
+              </h2>
+            </div>
+
+            <button
+              className="mdps-modal-close"
+              type="button"
+              aria-label="Close modal"
+              onClick={closeModal}
+            >
+              ✕
+            </button>
+          </div>
+
+          <form className="mdps-edit-form" onSubmit={onSubmit}>
+            <div className="mdps-form-grid">
+              <div className="mdps-field mdps-field-full">
+                <label htmlFor="editEmail">Email</label>
                 <input
-  type="text"
-  id="editFirstName"
-  readOnly
-  className="readonly-field"
-  value={selectedStudent?.firstName || ""}
-/>  
+                  id="editEmail"
+                  type="email"
+                  readOnly
+                  value={selectedStudent?.email || ''}
+                />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="editLastName">Last Name:</label>
+              <div className="mdps-field">
+                <label htmlFor="editFirstName">First name</label>
                 <input
-  type="text"
-  id="editLastName"
-  readOnly
-  className="readonly-field"
-  value={selectedStudent?.lastName || ""}
-/>
+                  id="editFirstName"
+                  type="text"
+                  readOnly
+                  value={selectedStudent?.firstName || ''}
+                />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="editGradeLevel">Grade Level:</label>
+              <div className="mdps-field">
+                <label htmlFor="editLastName">Last name</label>
+                <input
+                  id="editLastName"
+                  type="text"
+                  readOnly
+                  value={selectedStudent?.lastName || ''}
+                />
+              </div>
+
+              <div className="mdps-field">
+                <label htmlFor="editGradeLevel">Grade level</label>
                 <select
                   id="editGradeLevel"
                   value={edit.gradeLevel}
-                  onChange={(e) => setEdit((s) => ({ ...s, gradeLevel: e.target.value }))}
+                  onChange={(e) =>
+                    setEdit((state) => ({
+                      ...state,
+                      gradeLevel: e.target.value
+                    }))
+                  }
                 >
                   <option value="Grade 11">Grade 11</option>
                   <option value="Grade 12">Grade 12</option>
                 </select>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="editSection">Section:</label>
+              <div className="mdps-field">
+                <label htmlFor="editSection">Section</label>
                 <input
-                  type="text"
                   id="editSection"
+                  type="text"
                   placeholder="Example: Section A"
                   value={edit.section}
-                  onChange={(e) => setEdit((s) => ({ ...s, section: e.target.value }))}
+                  onChange={(e) =>
+                    setEdit((state) => ({
+                      ...state,
+                      section: e.target.value
+                    }))
+                  }
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="editSchool">School:</label>
-<input
-  type="text"
-  id="editSchool"
-  readOnly
-  className="readonly-field"
-  value={selectedStudent?.school || ""}
-/>
+              <div className="mdps-field mdps-field-full">
+                <label htmlFor="editSchool">School</label>
+                <input
+                  id="editSchool"
+                  type="text"
+                  readOnly
+                  value={selectedStudent?.school || 'Mother of Divine Providence School'}
+                />
               </div>
+            </div>
 
-              <div className="form-actions">
-                <button className="btn btn-primary" type="submit" disabled={saving}>
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-                <button className="btn btn-secondary" type="button" onClick={closeModal} disabled={saving}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div className="mdps-modal-actions">
+              <button
+                className="mdps-btn mdps-btn-cancel"
+                type="button"
+                onClick={closeModal}
+                disabled={saving}
+              >
+                Cancel
+              </button>
 
-        <div className={['floating-panel', floatingType, floatingMessage ? '' : 'hidden'].join(' ')}>
-          <span id="floatingPanelMessage">{floatingMessage}</span>
-        </div>
-      </main>
-    </>
+              <button
+                className="mdps-btn mdps-btn-save"
+                type="submit"
+                disabled={saving}
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <div className={['floating-panel', floatingType, floatingMessage ? '' : 'hidden'].join(' ')}>
+        <span id="floatingPanelMessage">{floatingMessage}</span>
+      </div>
+    </div>
   );
 }

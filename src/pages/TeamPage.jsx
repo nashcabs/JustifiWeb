@@ -11,7 +11,7 @@ export default function TeamPage() {
           type="button"
           id="backButton"
           className="team-back-button"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/', { state: { scrollTo: 'about' } })}
         >
           BACK
         </button>

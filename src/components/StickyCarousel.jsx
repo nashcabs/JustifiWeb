@@ -1,18 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { db } from '../services/firebaseClient.js';
 
-const ANNOUNCEMENT_COLLECTIONS = ['publicAnnouncements', 'announcements'];
-const LOCAL_ANNOUNCEMENTS_KEY = 'justifiLocalAnnouncements';
-
-function readLocalAnnouncements() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(LOCAL_ANNOUNCEMENTS_KEY) || '[]');
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
+const ANNOUNCEMENT_COLLECTION = 'publicAnnouncements';
 
 function getAnnouncementTime(item) {
   // Firestore Timestamp has toDate()
@@ -26,73 +16,53 @@ function getAnnouncementTime(item) {
 export default function StickyCarousel() {
   const [announcements, setAnnouncements] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [loadError, setLoadError] = useState('');
 
   const resolvedAnnouncements = useMemo(() => {
+    if (loadError) {
+      return [];
+    }
+
     if (!announcements.length) {
       return [{ id: 'empty', title: 'No Announcements', description: 'Add one from the developer page.' }];
     }
 
     return announcements;
-  }, [announcements]);
+  }, [announcements, loadError]);
 
   useEffect(() => {
-    let cancelled = false;
+    const announcementQuery = query(
+      collection(db, ANNOUNCEMENT_COLLECTION),
+      orderBy('createdAt', 'desc')
+    );
 
-    async function load() {
-      const localAnnouncements = readLocalAnnouncements();
+    return onSnapshot(
+      announcementQuery,
+      (snapshot) => {
+        const next = snapshot.docs
+          .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+          .filter((item) => item.title || item.description)
+          .sort((a, b) => getAnnouncementTime(b) - getAnnouncementTime(a));
 
-      try {
-        const snapshots = await Promise.all(
-          ANNOUNCEMENT_COLLECTIONS.map(async (collectionName) => {
-            const snap = await getDocs(query(collection(db, collectionName), orderBy('createdAt', 'desc')));
-            return snap.docs
-              .map((docSnap) => ({ id: docSnap.id, source: collectionName, ...docSnap.data() }))
-              .filter((item) => item.title || item.description);
-          })
-        );
-
-        const merged = new Map();
-
-        for (const rows of snapshots) {
-          for (const row of rows) {
-            if (!merged.has(row.id) || row.source === 'publicAnnouncements') {
-              merged.set(row.id, row);
-            }
-          }
-        }
-
-        let next = Array.from(merged.values());
-
-        for (const localItem of localAnnouncements) {
-          if (!next.some((row) => row.id === localItem.id)) {
-            next.push(localItem);
-          }
-        }
-
-        next.sort((a, b) => getAnnouncementTime(b) - getAnnouncementTime(a));
-
-        if (!cancelled) {
-          setAnnouncements(next);
-          setActiveIndex(0);
-        }
-      } catch (error) {
-        if (error?.code !== 'permission-denied') {
+        setLoadError('');
+        setAnnouncements(next);
+        setActiveIndex(0);
+      },
+      (error) => {
+        const isPermissionError = error?.code === 'permission-denied';
+        if (!isPermissionError) {
           console.error('Error loading announcements:', error);
         }
 
-        const next = localAnnouncements.sort((a, b) => getAnnouncementTime(b) - getAnnouncementTime(a));
-        if (!cancelled) {
-          setAnnouncements(next);
-          setActiveIndex(0);
-        }
+        setLoadError(
+          isPermissionError
+            ? 'Announcements are unavailable because Firestore blocked read access. Check your rules and project settings.'
+            : 'Announcements could not be loaded right now.'
+        );
+        setAnnouncements([]);
+        setActiveIndex(0);
       }
-    }
-
-    load();
-
-    return () => {
-      cancelled = true;
-    };
+    );
   }, []);
 
 
@@ -108,6 +78,26 @@ export default function StickyCarousel() {
 
   return (
     <div className="sticky-carousel" aria-label="Announcement sticky notes">
+      {loadError ? (
+        <div
+          className="sticky-error"
+          role="alert"
+          style={{
+            marginBottom: '12px',
+            padding: '12px 14px',
+            borderRadius: '14px',
+            background: 'rgba(66, 16, 16, 0.92)',
+            color: '#ffe6e6',
+            border: '1px solid rgba(255, 125, 125, 0.45)',
+            fontSize: '0.95rem',
+            lineHeight: 1.45
+          }}
+        >
+          {loadError}
+        </div>
+      ) : null}
+
+      {loadError ? null : (
       <button
         className="sticky-arrow sticky-prev"
         type="button"
@@ -117,6 +107,7 @@ export default function StickyCarousel() {
       >
         <img src="/assets/Icons/right.svg" alt="" aria-hidden="true" />
       </button>
+      )}
 
       <div className="sticky-window">
         {resolvedAnnouncements.map((item, index) => {
@@ -147,15 +138,17 @@ export default function StickyCarousel() {
         })}
       </div>
 
-      <button
-        className="sticky-arrow sticky-next"
-        type="button"
-        aria-label="Next announcement"
-        onClick={() => goTo(1)}
-        style={{ display: total > 1 ? undefined : 'none' }}
-      >
-        <img src="/assets/Icons/right.svg" alt="" aria-hidden="true" />
-      </button>
+      {loadError ? null : (
+        <button
+          className="sticky-arrow sticky-next"
+          type="button"
+          aria-label="Next announcement"
+          onClick={() => goTo(1)}
+          style={{ display: total > 1 ? undefined : 'none' }}
+        >
+          <img src="/assets/Icons/right.svg" alt="" aria-hidden="true" />
+        </button>
+      )}
     </div>
   );
 }

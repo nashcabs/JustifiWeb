@@ -14,56 +14,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { db } from '../../services/firebaseClient.js';
 
-
-const PRIMARY_ANNOUNCEMENT_COLLECTION = 'publicAnnouncements';
-const OPTIONAL_MIRROR_COLLECTIONS = ['announcements'];
-const ANNOUNCEMENT_COLLECTIONS = [PRIMARY_ANNOUNCEMENT_COLLECTION, ...OPTIONAL_MIRROR_COLLECTIONS];
-const LOCAL_ANNOUNCEMENTS_KEY = 'justifiLocalAnnouncements';
-
-function readLocalAnnouncements() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(LOCAL_ANNOUNCEMENTS_KEY) || '[]');
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeLocalAnnouncements(rows) {
-  localStorage.setItem(LOCAL_ANNOUNCEMENTS_KEY, JSON.stringify(Array.isArray(rows) ? rows : []));
-}
-
-function upsertLocalAnnouncement(id, title, description) {
-  const nowIso = new Date().toISOString();
-  const rows = readLocalAnnouncements();
-  const index = rows.findIndex((row) => row && row.id === id);
-
-  if (index >= 0) {
-    rows[index] = {
-      ...rows[index],
-      title,
-      description,
-      updatedAt: nowIso,
-      source: 'local'
-    };
-  } else {
-    rows.push({
-      id,
-      title,
-      description,
-      createdAt: nowIso,
-      updatedAt: nowIso,
-      source: 'local'
-    });
-  }
-
-  writeLocalAnnouncements(rows);
-}
-
-function deleteLocalAnnouncement(id) {
-  const rows = readLocalAnnouncements().filter((row) => row && row.id !== id);
-  writeLocalAnnouncements(rows);
-}
+const ANNOUNCEMENT_COLLECTION = 'publicAnnouncements';
 
 function isPermissionDenied(error) {
   return !!(error && (error.code === 'permission-denied' || /permission/i.test(error.message || '')));
@@ -125,42 +76,18 @@ export default function UpdateAnnouncement() {
   }
 
   async function loadAnnouncements() {
-    const localRows = readLocalAnnouncements();
-
     try {
-      const snapshots = await Promise.all(
-        ANNOUNCEMENT_COLLECTIONS.map(async (collectionName) => {
-          try {
-            const snap = await getDocs(query(collection(db, collectionName), orderBy('createdAt', 'desc')));
-            return snap.docs.map((d) => ({ id: d.id, source: collectionName, ...d.data() }));
-          } catch (err) {
-            console.warn(`Skipping announcement collection ${collectionName}:`, err);
-            return [];
-          }
-        })
-      );
-
-      const merged = new Map();
-      for (const rows of snapshots) {
-        for (const row of rows) {
-          if (!merged.has(row.id) || row.source === PRIMARY_ANNOUNCEMENT_COLLECTION) {
-            merged.set(row.id, row);
-          }
-        }
-      }
-
-      for (const localRow of localRows) {
-        if (!merged.has(localRow.id)) merged.set(localRow.id, localRow);
-      }
-
-      const rows = Array.from(merged.values()).sort((a, b) => formatSortDate(b.createdAt) - formatSortDate(a.createdAt));
+      const snap = await getDocs(query(collection(db, ANNOUNCEMENT_COLLECTION), orderBy('createdAt', 'desc')));
+      const rows = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => formatSortDate(b.createdAt) - formatSortDate(a.createdAt));
       setAnnouncements(rows);
       return;
     } catch (err) {
       console.error(err);
     }
 
-    setAnnouncements(localRows.slice().sort((a, b) => formatSortDate(b.createdAt) - formatSortDate(a.createdAt)));
+    setAnnouncements([]);
   }
 
   useEffect(() => {
@@ -200,20 +127,14 @@ export default function UpdateAnnouncement() {
 
       if (editingId) {
         try {
-          await setDoc(doc(db, PRIMARY_ANNOUNCEMENT_COLLECTION, editingId), payload, { merge: true });
-          await Promise.all(
-            OPTIONAL_MIRROR_COLLECTIONS.map((collectionName) =>
-              setDoc(doc(db, collectionName, editingId), payload, { merge: true }).catch(() => null)
-            )
-          );
+          await setDoc(doc(db, ANNOUNCEMENT_COLLECTION, editingId), payload, { merge: true });
           showToast('Announcement updated successfully!', 'success');
         } catch (saveError) {
           if (!isPermissionDenied(saveError)) throw saveError;
-          upsertLocalAnnouncement(editingId, t, d);
-          showToast('Firestore denied update. Announcement saved locally for homepage sticky notes.', 'success');
+          showToast('Firestore denied update. Check developer permissions.', 'error');
         }
       } else {
-        const newRef = doc(collection(db, PRIMARY_ANNOUNCEMENT_COLLECTION));
+        const newRef = doc(collection(db, ANNOUNCEMENT_COLLECTION));
         const createdId = newRef.id;
         const createPayload = {
           title: t,
@@ -224,16 +145,10 @@ export default function UpdateAnnouncement() {
 
         try {
           await setDoc(newRef, createPayload);
-          await Promise.all(
-            OPTIONAL_MIRROR_COLLECTIONS.map((collectionName) =>
-              setDoc(doc(db, collectionName, createdId), createPayload).catch(() => null)
-            )
-          );
           showToast('Announcement added successfully!', 'success');
         } catch (saveError) {
           if (!isPermissionDenied(saveError)) throw saveError;
-          upsertLocalAnnouncement(createdId, t, d);
-          showToast('Firestore denied create. Announcement saved locally for homepage sticky notes.', 'success');
+          showToast('Firestore denied create. Check developer permissions.', 'error');
         }
       }
 
@@ -262,27 +177,13 @@ export default function UpdateAnnouncement() {
     if (!confirm('Are you sure you want to delete this announcement?')) return;
 
     try {
-      let deletedFromRemote = false;
-
       try {
-        await Promise.all(
-          ANNOUNCEMENT_COLLECTIONS.map((collectionName) =>
-            deleteDoc(doc(db, collectionName, id)).catch(() => null)
-          )
-        );
-        deletedFromRemote = true;
+        await deleteDoc(doc(db, ANNOUNCEMENT_COLLECTION, id));
+        showToast('Announcement deleted successfully!', 'success');
       } catch (deleteError) {
         if (!isPermissionDenied(deleteError)) throw deleteError;
+        showToast('Firestore denied delete. Check developer permissions.', 'error');
       }
-
-      deleteLocalAnnouncement(id);
-
-      showToast(
-        deletedFromRemote
-          ? 'Announcement deleted successfully!'
-          : 'Firestore denied delete. Local announcement entry was removed.',
-        'success'
-      );
 
       await loadAnnouncements();
     } catch (err) {
@@ -408,13 +309,25 @@ export default function UpdateAnnouncement() {
             </div>
 
             <div className="form-actions">
-              <button className="btn btn-primary" id="submitBtn" type="submit" disabled={disabled}>
-                {submitLabel}
-              </button>
-              <button className="btn btn-secondary" id="resetFormBtn2" type="button" onClick={resetForm} disabled={disabled}>
-                Cancel
-              </button>
-            </div>
+  <button
+    className="assign-btn"
+    id="submitBtn"
+    type="submit"
+    disabled={disabled}
+  >
+    {submitLabel}
+  </button>
+
+  <button
+    className="close-form-btn cancel-announcement-btn"
+    id="resetFormBtn2"
+    type="button"
+    onClick={resetForm}
+    disabled={disabled}
+  >
+    Cancel
+  </button>
+</div>
           </form>
         </section>
 

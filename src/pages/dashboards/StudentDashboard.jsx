@@ -4,10 +4,38 @@ import Chart from 'chart.js/auto';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { getDisplayName, logout } from '../../services/justifiFirebase.js';
 
-
 function safeText(value) {
   if (value === null || value === undefined) return '';
   return String(value).trim();
+}
+
+function getQuizPercent(row) {
+  if (!row) return 0;
+
+  if (row.latestPercent !== undefined) return Math.round(Number(row.latestPercent) * 100);
+  if (row.bestPercent !== undefined) return Math.round(Number(row.bestPercent) * 100);
+  if (row.percentage !== undefined) return Number(row.percentage);
+
+  if (row.latestScore !== undefined && row.maxScore) {
+    return Math.round((Number(row.latestScore) / Number(row.maxScore)) * 100);
+  }
+
+  if (row.bestScore !== undefined && row.maxScore) {
+    return Math.round((Number(row.bestScore) / Number(row.maxScore)) * 100);
+  }
+
+  return 0;
+}
+
+function getQuizLabel(quiz, index) {
+  const id = quiz?.quizId || '';
+
+  if (id.includes('ch1')) return 'Chapter 1';
+  if (id.includes('ch2')) return 'Chapter 2';
+  if (id.includes('ch3')) return 'Chapter 3';
+  if (id.includes('ch4')) return 'Chapter 4';
+
+  return quiz?.chapterName || quiz?.chapter || `Quiz ${index + 1}`;
 }
 
 export default function StudentDashboard() {
@@ -17,6 +45,7 @@ export default function StudentDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [floatingMessage, setFloatingMessage] = useState('');
   const [floatingType, setFloatingType] = useState('success');
+
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
 
@@ -34,8 +63,12 @@ export default function StudentDashboard() {
   const quizScores = Array.isArray(user?.quizScores) ? user.quizScores : [];
 
   const completedLessons = progressItems.length;
+
   const average = quizScores.length
-    ? Math.round(quizScores.reduce((sum, row) => sum + (Number(row?.score) || 0), 0) / quizScores.length)
+    ? Math.round(
+        quizScores.reduce((sum, row) => sum + getQuizPercent(row), 0) /
+          quizScores.length
+      )
     : 0;
 
   useEffect(() => {
@@ -49,12 +82,12 @@ export default function StudentDashboard() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const labels = progressItems.length
-      ? progressItems.map((item, index) => item?.moduleTitle || `Module ${index + 1}`)
+    const labels = quizScores.length
+      ? quizScores.map((quiz, index) => getQuizLabel(quiz, index))
       : ['No Data'];
 
-    const scores = progressItems.length
-      ? progressItems.map((item) => Number(item?.score) || 0)
+    const scores = quizScores.length
+      ? quizScores.map((quiz) => getQuizPercent(quiz))
       : [0];
 
     if (chartRef.current) {
@@ -68,7 +101,7 @@ export default function StudentDashboard() {
         labels,
         datasets: [
           {
-            label: 'Progress Score',
+            label: 'Quiz Score',
             data: scores,
             borderWidth: 2,
             tension: 0.35,
@@ -107,7 +140,7 @@ export default function StudentDashboard() {
         chartRef.current = null;
       }
     };
-  }, [progressItems]);
+  }, [quizScores]);
 
   function showFloatingPanel(message, type = 'success') {
     setFloatingMessage(String(message || ''));
@@ -135,7 +168,9 @@ export default function StudentDashboard() {
         </a>
 
         <div className="topbar-right">
-          <span className="welcome">Welcome, <strong id="navUserName">{getDisplayName(user) || displayName}</strong></span>
+          <span className="welcome">
+            Welcome, <strong id="navUserName">{getDisplayName(user) || displayName}</strong>
+          </span>
 
           <button
             id="menuBtn"
@@ -158,7 +193,12 @@ export default function StudentDashboard() {
       <aside id="sideMenu" className={['side-menu', menuOpen ? 'open' : ''].join(' ')}>
         <div className="side-menu-header">
           <h3>Menu</h3>
-          <button id="closeMenuBtn" className="close-menu-btn" type="button" onClick={() => setMenuOpen(false)}>
+          <button
+            id="closeMenuBtn"
+            className="close-menu-btn"
+            type="button"
+            onClick={() => setMenuOpen(false)}
+          >
             ✕
           </button>
         </div>
@@ -166,12 +206,22 @@ export default function StudentDashboard() {
         <div className="side-menu-body">
           <button className="menu-link" onClick={() => navigate('/student/profile')}>Profile</button>
           <button className="menu-link" onClick={() => navigate('/student/badges')}>Badges</button>
+          <button className="menu-link" onClick={() => navigate('/student/quizzes')}>Quizzes</button>
           <button className="menu-link logout-btn" onClick={onLogout}>Logout</button>
         </div>
       </aside>
 
       <div className="back-row">
-        <a className="back-btn" href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }}>Back</a>
+        <a
+          className="back-btn"
+          href="/"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate('/');
+          }}
+        >
+          Back
+        </a>
       </div>
 
       <main className="dashboard-shell">
@@ -186,12 +236,16 @@ export default function StudentDashboard() {
         <section className="stats-grid">
           <div className="stat-card">
             <span className="stat-label">Lessons</span>
-            <strong className="stat-value" id="lessonCount">{String(completedLessons).padStart(2, '0')}</strong>
+            <strong className="stat-value" id="lessonCount">
+              {String(completedLessons).padStart(2, '0')}
+            </strong>
           </div>
 
           <div className="stat-card">
             <span className="stat-label">Badges</span>
-            <strong className="stat-value" id="badgeCount">{String(badges.length).padStart(2, '0')}</strong>
+            <strong className="stat-value" id="badgeCount">
+              {String(badges.length).padStart(2, '0')}
+            </strong>
           </div>
 
           <div className="stat-card">
@@ -216,10 +270,7 @@ export default function StudentDashboard() {
                 <p>See your earned achievements and rewards.</p>
               </button>
 
-              <button
-                className="feature-card"
-                onClick={() => showFloatingPanel('Quizzes page is coming soon.', 'info')}
-              >
+              <button className="feature-card" onClick={() => navigate('/student/quizzes')}>
                 <h3>Quizzes</h3>
                 <p>Review your quiz activities and progress scores.</p>
               </button>
