@@ -493,11 +493,7 @@ export default function LandingPage() {
           className="characters team-characters-panel"
         >
           <div className="content">
-            <img
-              src="/assets/Background/cha.svg"
-              alt="Characters"
-              className="characters-title-img"
-            />
+            <h2 className="characters-section-title">CHARACTERS</h2>
 
             <div className="character-layout">
               <div className="slider-area">

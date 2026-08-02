@@ -413,76 +413,40 @@ export default function TeacherDashboard() {
               one dashboard.
             </p>
 
-            <div className="mdps-hero-actions">
-              <button
-                className="mdps-btn mdps-btn-light"
-                type="button"
-                onClick={() => navigate('/teacher/students')}
-              >
-                <span aria-hidden="true">◉</span>
-                View Student List
-              </button>
-
-              <button
-                className="mdps-btn mdps-btn-outline"
-                type="button"
-                onClick={() => navigate('/teacher/manage-students')}
-              >
-                <span aria-hidden="true">↻</span>
-                Manage Students
-              </button>
-            </div>
           </div>
         </section>
 
-        <section className="mdps-process-section" aria-labelledby="admin-process-title">
-          <div className="mdps-section-heading">
-            <span className="mdps-heading-icon" aria-hidden="true">◇</span>
-            <h2 id="admin-process-title">Administration Process</h2>
+       <section className="mdps-quick-panel">
+          <div className="mdps-panel-heading">
+            <div>
+              <p className="mdps-panel-kicker">QUICK ACCESS</p>
+              <h2>Administrative Tools</h2>
+            </div>
           </div>
 
-          <div className="mdps-process-grid">
-            <button
-              className="mdps-process-card"
-              type="button"
-              onClick={() => navigate('/teacher/students')}
-            >
-              <span className="mdps-process-number">1</span>
-              <strong>Review Students</strong>
-              <p>Open the complete student list and review registered accounts.</p>
-              <span className="mdps-process-arrow" aria-hidden="true">›</span>
+          <div className="mdps-quick-grid">
+            <button type="button" onClick={() => navigate('/teacher/profile')}>
+              <span className="mdps-quick-icon" aria-hidden="true">A</span>
+              <span>
+                <strong>Admin Profile</strong>
+                <small>View and update your account information.</small>
+              </span>
             </button>
 
-            <button
-              className="mdps-process-card"
-              type="button"
-              onClick={() => navigate('/teacher/students')}
-            >
-              <span className="mdps-process-number">2</span>
-              <strong>Monitor Progress</strong>
-              <p>Check learning activity, quiz scores, and completion status.</p>
-              <span className="mdps-process-arrow" aria-hidden="true">›</span>
+            <button type="button" onClick={() => navigate('/teacher/students')}>
+              <span className="mdps-quick-icon" aria-hidden="true">S</span>
+              <span>
+                <strong>Student List</strong>
+                <small>Review individual progress, scores, and performance.</small>
+              </span>
             </button>
 
-            <button
-              className="mdps-process-card"
-              type="button"
-              onClick={() => navigate('/teacher/manage-students')}
-            >
-              <span className="mdps-process-number">3</span>
-              <strong>Manage Records</strong>
-              <p>Update grade levels, sections, and student information.</p>
-              <span className="mdps-process-arrow" aria-hidden="true">›</span>
-            </button>
-
-            <button
-              className="mdps-process-card"
-              type="button"
-              onClick={onPrintData}
-            >
-              <span className="mdps-process-number">4</span>
-              <strong>Export Reports</strong>
-              <p>Download the latest student monitoring data as an Excel file.</p>
+            <button type="button" onClick={() => navigate('/teacher/manage-students')}>
+              <span className="mdps-quick-icon" aria-hidden="true">M</span>
+              <span>
+                <strong>Manage Students</strong>
+                <small>Edit grade level, section, and academic information.</small>
+              </span>
             </button>
           </div>
         </section>
@@ -530,40 +494,7 @@ export default function TeacherDashboard() {
           </div>
         </section>
 
-        <section className="mdps-quick-panel">
-          <div className="mdps-panel-heading">
-            <div>
-              <p className="mdps-panel-kicker">QUICK ACCESS</p>
-              <h2>Administrative Tools</h2>
-            </div>
-          </div>
-
-          <div className="mdps-quick-grid">
-            <button type="button" onClick={() => navigate('/teacher/profile')}>
-              <span className="mdps-quick-icon" aria-hidden="true">A</span>
-              <span>
-                <strong>Admin Profile</strong>
-                <small>View and update your account information.</small>
-              </span>
-            </button>
-
-            <button type="button" onClick={() => navigate('/teacher/students')}>
-              <span className="mdps-quick-icon" aria-hidden="true">S</span>
-              <span>
-                <strong>Student List</strong>
-                <small>Review individual progress, scores, and performance.</small>
-              </span>
-            </button>
-
-            <button type="button" onClick={() => navigate('/teacher/manage-students')}>
-              <span className="mdps-quick-icon" aria-hidden="true">M</span>
-              <span>
-                <strong>Manage Students</strong>
-                <small>Edit grade level, section, and academic information.</small>
-              </span>
-            </button>
-          </div>
-        </section>
+       
       </main>
 
       <div className={['floating-panel', floatingType, floatingMessage ? '' : 'hidden'].join(' ')}>

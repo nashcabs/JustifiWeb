@@ -1,5 +1,13 @@
 @import url("https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Patrick+Hand&display=swap");
 
+@font-face {
+  font-family: "Antio";
+  src: url("/assets/Font/Antio.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -1758,7 +1766,7 @@ body.world-preview-open {
 #trailer .trailer-kicker {
   margin: 0 0 clamp(16px, 2vw, 24px);
   color: #fff8e9;
-  font-family: "Patrick Hand", "Segoe Print", "Bradley Hand", cursive;
+  font-family: "Antio", "Patrick Hand", "Segoe Print", "Bradley Hand", cursive;
   font-size: clamp(2.7rem, 5.5vw, 5rem);
   font-weight: 400;
   line-height: 0.95;
@@ -11003,7 +11011,7 @@ width: clamp(1000px, 88vw, 1600px);
   margin: 0 auto clamp(42px, 5vw, 70px);
   padding-inline: clamp(18px, 4vw, 74px);
   color: #fffaf0;
-  font-family: "Patrick Hand", "Segoe Print", "Comic Sans MS", cursive;
+  font-family: "Antio", "Patrick Hand", "Segoe Print", "Comic Sans MS", cursive;
   font-size: clamp(2rem, 4vw, 4rem);
   font-weight: 700;
   line-height: 1.05;
@@ -11493,13 +11501,26 @@ width: clamp(1000px, 88vw, 1600px);
     display: none;
   }
 
+  /* Mobile Game Features: 2 columns x 3 rows (2-2-2). */
   .features-grid {
-    grid-template-columns: 1fr;
-    gap: 18px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+    gap: 12px;
+    align-items: stretch;
   }
 
   .game-features .features-grid .feature-card {
-    min-height: 125px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 112px !important;
+    padding: 16px 10px !important;
+    border-radius: 14px !important;
+  }
+
+  .game-features .features-grid .feature-card h3 {
+    font-size: clamp(0.82rem, 3.7vw, 1rem) !important;
+    line-height: 1.18 !important;
+    overflow-wrap: anywhere;
   }
 
   .learning-modules .modules-list {
@@ -11865,10 +11886,19 @@ width: clamp(1000px, 88vw, 1600px);
   box-shadow: none !important;
 }
 
-#characters .characters-title-img {
-  width: min(520px, 78vw) !important;
-  max-width: 520px !important;
+#characters .characters-section-title {
+  width: min(760px, 90vw) !important;
+  max-width: 760px !important;
   margin: 0 auto clamp(28px, 4vw, 48px) !important;
+
+  color: #fff8ef !important;
+  font-family: "Antio", "Patrick Hand", "Segoe Print", cursive !important;
+  font-size: clamp(3.6rem, 7vw, 7.5rem) !important;
+  font-weight: 400 !important;
+  line-height: 0.95 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.55) !important;
 }
 
 #characters .character-layout {
@@ -12421,7 +12451,7 @@ width: clamp(1000px, 88vw, 1600px);
 .partners-header h2 {
   margin: 0;
   color: #32231d;
-  font-family: "Patrick Hand", "Segoe Print", cursive;
+  font-family: "Antio", "Patrick Hand", "Segoe Print", cursive;
   font-size: clamp(2.5rem, 4.4vw, 5.2rem);
   font-weight: 400;
   line-height: 0.95;
@@ -13234,7 +13264,7 @@ width: clamp(1000px, 88vw, 1600px);
   margin: 0 0 clamp(24px, 3vh, 34px) !important;
 
   color: #fff8ee !important;
-  font-family: "Patrick Hand", "Segoe Print", cursive !important;
+  font-family: "Antio", "Patrick Hand", "Segoe Print", cursive !important;
   font-size: clamp(2.4rem, 4.4vw, 4.2rem) !important;
   font-weight: 400 !important;
   line-height: 0.95 !important;
@@ -13492,7 +13522,7 @@ width: clamp(1000px, 88vw, 1600px);
 }
 
 #contact .contact-field textarea {
-  min-height: 130px !important;
+  min-height: 190px !important;
   padding: 12px 13px !important;
 
   resize: vertical !important;
@@ -13508,11 +13538,11 @@ width: clamp(1000px, 88vw, 1600px);
 }
 
 #contact .contact-message-field {
-  flex: 1 !important;
+  flex: none !important;
 }
 
 #contact .contact-form-footer {
-  margin-top: auto !important;
+  margin-top: 0 !important;
 
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(180px, 0.46fr) !important;
@@ -14418,7 +14448,7 @@ width: clamp(1000px, 88vw, 1600px);
   padding: 30px 24px 56px;
 
   display: grid;
-  gap: 28px;
+  gap: 18px;
 }
 
 /* Hero */
@@ -14503,10 +14533,10 @@ width: clamp(1000px, 88vw, 1600px);
 }
 
 .mdps-admin-page .mdps-hero-actions {
-  margin-top: 20px;
+  margin-top: 14px;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .mdps-admin-page .mdps-btn {
@@ -14575,7 +14605,7 @@ width: clamp(1000px, 88vw, 1600px);
 .mdps-admin-page .mdps-process-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .mdps-admin-page .mdps-process-card {
@@ -14748,11 +14778,11 @@ width: clamp(1000px, 88vw, 1600px);
 
 /* Quick tools */
 .mdps-admin-page .mdps-quick-grid {
-  margin-top: 17px;
+  margin-top: 12px;
 
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .mdps-admin-page .mdps-quick-grid > button {
@@ -16108,7 +16138,7 @@ width: clamp(1000px, 88vw, 1600px);
   margin: 0;
 
   color: #fff8e9;
-  font-family: "Patrick Hand", "Segoe Print", cursive;
+  font-family: "Antio", "Patrick Hand", "Segoe Print", cursive;
   font-size: clamp(2.35rem, 4vw, 4rem);
   font-weight: 400;
   line-height: 0.95;
@@ -16668,7 +16698,7 @@ width: clamp(1000px, 88vw, 1600px);
   margin: 0;
 
   color: #171717;
-  font-family: "Patrick Hand", "Segoe Print", cursive;
+  font-family: "Antio", "Patrick Hand", "Segoe Print", cursive;
   font-size: clamp(2.5rem, 4.2vw, 4.35rem);
   font-weight: 400;
   line-height: 0.95;
@@ -17029,19 +17059,19 @@ width: clamp(1000px, 88vw, 1600px);
 }
 
 #home .home-callout-kickers {
-  width: min(760px, 86vw) !important;
+  width: min(1180px, 94vw) !important;
   margin: 0 auto !important;
 
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: clamp(24px, 8vw, 110px) !important;
+  gap: clamp(22px, 5vw, 82px) !important;
   align-items: center !important;
 }
 
 #home .home-callout-kickers span {
   color: #fff9ef !important;
-  font-family: "Patrick Hand", "Segoe Print", cursive !important;
-  font-size: clamp(1rem, 1.8vw, 1.65rem) !important;
+  font-family: "Antio", "Patrick Hand", "Segoe Print", cursive !important;
+  font-size: clamp(1.5rem, 2.7vw, 2.475rem) !important;
   font-weight: 400 !important;
   line-height: 1 !important;
   letter-spacing: 0.055em !important;
@@ -17052,7 +17082,7 @@ width: clamp(1000px, 88vw, 1600px);
   margin: 0 !important;
 
   color: #fff9ef !important;
-  font-family: "Patrick Hand", "Segoe Print", cursive !important;
+  font-family: "Antio", "Patrick Hand", "Segoe Print", cursive !important;
   font-size: clamp(2.2rem, 4.7vw, 5.15rem) !important;
   font-weight: 400 !important;
   line-height: 0.98 !important;
@@ -17187,7 +17217,8 @@ width: clamp(1000px, 88vw, 1600px);
   }
 
   #home .home-callout-kickers span {
-    font-size: clamp(0.78rem, 3.6vw, 1.05rem) !important;
+    font-size: clamp(1.17rem, 5.4vw, 1.575rem) !important;
+    line-height: 1.05 !important;
     white-space: normal !important;
   }
 
@@ -17197,3 +17228,101 @@ width: clamp(1000px, 88vw, 1600px);
   }
 }
 
+/* =========================================================
+   MDPS SIDEBAR HEADER CLEARANCE
+   Keep the drawer and its overlay below the school header.
+   ========================================================= */
+
+.mdps-admin-page {
+  --mdps-visible-header-height: 82px;
+}
+
+.mdps-admin-page .menu-overlay {
+  top: var(--mdps-visible-header-height) !important;
+  height: calc(100dvh - var(--mdps-visible-header-height)) !important;
+}
+
+.mdps-admin-page .side-menu {
+  top: var(--mdps-visible-header-height) !important;
+  bottom: 0 !important;
+  height: calc(100dvh - var(--mdps-visible-header-height)) !important;
+
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+
+  border-top-left-radius: 22px !important;
+}
+
+.mdps-admin-page .side-menu-header {
+  position: relative !important;
+  padding-top: 2px !important;
+}
+
+.mdps-admin-page .side-menu-body {
+  padding-top: 22px !important;
+  padding-bottom: 28px !important;
+}
+
+@media (max-width: 900px) {
+  .mdps-admin-page {
+    --mdps-visible-header-height: 72px;
+  }
+}
+
+/* =========================================================
+   MDPS SIDEBAR HEADER CLEARANCE
+   Keep the drawer and its overlay below the school header.
+   ========================================================= */
+
+.mdps-admin-page {
+  --mdps-visible-header-height: 82px;
+}
+
+.mdps-admin-page .menu-overlay {
+  top: var(--mdps-visible-header-height) !important;
+  height: calc(100dvh - var(--mdps-visible-header-height)) !important;
+}
+
+.mdps-admin-page .side-menu {
+  top: var(--mdps-visible-header-height) !important;
+  bottom: 0 !important;
+  height: calc(100dvh - var(--mdps-visible-header-height)) !important;
+
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+
+  border-top-left-radius: 22px !important;
+}
+
+.mdps-admin-page .side-menu-header {
+  position: relative !important;
+  padding-top: 2px !important;
+}
+
+.mdps-admin-page .side-menu-body {
+  padding-top: 22px !important;
+  padding-bottom: 28px !important;
+}
+
+@media (max-width: 900px) {
+  .mdps-admin-page {
+    --mdps-visible-header-height: 72px;
+  }
+}
+
+/* Landing-page statements enlarged to exactly 1.5x. */
+#home .home-callout-kickers {
+  width: min(1180px, 94vw) !important;
+  gap: clamp(22px, 5vw, 82px) !important;
+}
+
+#home .home-callout-kickers span {
+  font-size: clamp(1.5rem, 2.7vw, 2.475rem) !important;
+}
+
+@media (max-width: 768px) {
+  #home .home-callout-kickers span {
+    font-size: clamp(1.17rem, 5.4vw, 1.575rem) !important;
+    line-height: 1.05 !important;
+  }
+}

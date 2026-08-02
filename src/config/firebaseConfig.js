@@ -1,12 +1,26 @@
 // Firebase config.
-// Prefer Vite env vars, but fallback to the existing project config so the app works out-of-the-box.
+// Read values from Vite environment variables so secrets are not hardcoded.
+
+function getFirebaseEnv(name, { required = true } = {}) {
+  const value = import.meta.env[name];
+
+  if (required && (!value || value === '')) {
+    throw new Error(`Missing required Firebase environment variable: ${name}`);
+  }
+
+  return value;
+}
+
+const measurementId = getFirebaseEnv('VITE_FIREBASE_MEASUREMENT_ID', { required: false });
 
 export const firebaseConfig = {
-  apiKey: 'AIzaSyC4z0VH0qlD2Fqn2QhzCE8D7mo0AdRoHvM',
-  authDomain: 'justifi-4a327.firebaseapp.com',
-  projectId: 'justifi-4a327',
-  storageBucket: 'justifi-4a327.firebasestorage.app',
-  messagingSenderId: '192148448547',
-  appId: '1:192148448547:web:7cba616681b51013d29896',
-  measurementId: 'G-DNXHWJW29B'
+  apiKey: getFirebaseEnv('VITE_FIREBASE_API_KEY'),
+  authDomain: getFirebaseEnv('VITE_FIREBASE_AUTH_DOMAIN'),
+  projectId: getFirebaseEnv('VITE_FIREBASE_PROJECT_ID'),
+  storageBucket: getFirebaseEnv('VITE_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: getFirebaseEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: getFirebaseEnv('VITE_FIREBASE_APP_ID'),
+  ...(measurementId ? { measurementId } : {})
 };
+
+export default firebaseConfig;
