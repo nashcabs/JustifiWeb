@@ -20,6 +20,7 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  startAfter,
   updateDoc,
   where
 } from 'firebase/firestore';
@@ -132,7 +133,7 @@ async function mapUser(firebaseUser) {
     role: normalizeRole(profile.role),
 
     schoolId: profile.schoolId ?? null,
-    school: profile.school || '',
+    schoolName: profile.schoolName || '',
 
     firstName: profile.firstName || '',
     middleName: profile.middleName || '',
@@ -227,7 +228,7 @@ function mapProfileDoc(id, profile = {}) {
     role: normalizeRole(profile.role),
 
     schoolId: profile.schoolId ?? null,
-    school: profile.school || '',
+    schoolName: profile.schoolName || '',
 
     firstName: profile.firstName || '',
     middleName: profile.middleName || '',
@@ -418,9 +419,9 @@ async function createUserProfileIfMissing(
       : pendingProfile.schoolId ||
         DEFAULT_SCHOOL_ID,
 
-    school: isNonStudent
+    schoolName: isNonStudent
       ? ''
-      : pendingProfile.school ||
+      : pendingProfile.schoolName ||
         DEFAULT_SCHOOL_NAME,
 
     firstName:
@@ -770,7 +771,7 @@ export function subscribeToUsers(
   );
 }
 
-export async function getStudents(viewer = null) {
+export async function getStudents(viewer = null, options = {}) {
   const queryParts = [
     where('role', '==', 'student')
   ];
@@ -781,10 +782,19 @@ export async function getStudents(viewer = null) {
   const viewerSchoolId =
     String(viewer?.schoolId || '').trim();
 
+  // Log for debugging: check if teacher has schoolId
+  if (viewerRole === 'teacher') {
+    console.log('[JustiFi] Teacher viewer schoolId:', viewerSchoolId || '(empty)');
+  }
+
+  // For teachers with a schoolId, try filtering by school first
+  // If no students found with school filter, fall back to all students
+  let useSchoolFilter = false;
   if (
     viewerRole === 'teacher' &&
     viewerSchoolId
   ) {
+    useSchoolFilter = true;
     queryParts.push(
       where(
         'schoolId',
@@ -826,21 +836,169 @@ export async function getStudents(viewer = null) {
     }
   }
 
-  const snapshot =
-    await getDocs(
-      query(
-        collection(db, 'users'),
-        ...queryParts
-      )
+  const pageSizeValue =
+    typeof options?.pageSize !== 'undefined'
+      ? Number(options.pageSize)
+      : undefined;
+
+  const isPaginated =
+    Number.isFinite(pageSizeValue) &&
+    pageSizeValue > 0;
+
+  const cursor = options?.cursor || null;
+
+  try {
+    if (!isPaginated) {
+      const snapshot = await getDocs(
+        query(
+          collection(db, 'users'),
+          ...queryParts
+        )
+      );
+
+      let results = snapshot.docs.map(
+        (documentSnapshot) =>
+          mapProfileDoc(
+            documentSnapshot.id,
+            documentSnapshot.data()
+          )
+      );
+
+      // If teacher has school filter and got 0 results, try without schoolId filter
+      // to check if students exist but lack schoolId field
+      if (
+        viewerRole === 'teacher' &&
+        useSchoolFilter &&
+        results.length === 0
+      ) {
+        console.log('[JustiFi] No students found with schoolId filter, trying without school filter...');
+        
+        const fallbackQueryParts = [
+          where('role', '==', 'student')
+        ];
+
+        const assignedGradeLevel =
+          String(
+            viewer?.assignedGradeLevel || ''
+          ).trim();
+
+        const assignedSection =
+          String(
+            viewer?.assignedSection || ''
+          ).trim();
+
+        if (assignedGradeLevel) {
+          fallbackQueryParts.push(
+            where(
+              'gradeLevel',
+              '==',
+              assignedGradeLevel
+            )
+          );
+        }
+
+        if (assignedSection) {
+          fallbackQueryParts.push(
+            where(
+              'section',
+              '==',
+              assignedSection
+            )
+          );
+        }
+
+        const fallbackSnapshot = await getDocs(
+          query(
+            collection(db, 'users'),
+            ...fallbackQueryParts
+          )
+        );
+
+        const fallbackResults = fallbackSnapshot.docs.map(
+          (documentSnapshot) =>
+            mapProfileDoc(
+              documentSnapshot.id,
+              documentSnapshot.data()
+            )
+        );
+
+        if (fallbackResults.length > 0) {
+          console.log('[JustiFi] WARNING: Found', fallbackResults.length, 'students WITHOUT schoolId field. These need to be updated to have schoolId:', viewerSchoolId);
+          results = fallbackResults;
+        }
+      }
+
+      console.log('[JustiFi] getStudents() returned', results.length, 'students');
+      return results;
+    }
+
+    const pageSize = Math.min(
+      Math.max(1, Math.trunc(pageSizeValue)),
+      50
     );
 
-  return snapshot.docs.map(
-    (documentSnapshot) =>
-      mapProfileDoc(
-        documentSnapshot.id,
-        documentSnapshot.data()
-      )
-  );
+    const queryArgs = [
+      collection(db, 'users'),
+      ...queryParts
+    ];
+
+    if (cursor) {
+      queryArgs.push(startAfter(cursor));
+    }
+
+    queryArgs.push(limit(pageSize + 1));
+
+    const snapshot = await getDocs(query(...queryArgs));
+
+    const items = snapshot.docs
+      .slice(0, pageSize)
+      .map((documentSnapshot) =>
+        mapProfileDoc(
+          documentSnapshot.id,
+          documentSnapshot.data()
+        )
+      );
+
+    const hasMore = snapshot.docs.length > pageSize;
+    const nextCursor =
+      hasMore && snapshot.docs[pageSize - 1]
+        ? snapshot.docs[pageSize - 1]
+        : null;
+
+    return {
+      success: true,
+      items,
+      pageSize,
+      hasMore,
+      nextCursor
+    };
+  } catch (error) {
+    const isPermissionDenied =
+      error?.code === 'permission-denied';
+
+    const status = isPermissionDenied ? 403 : 500;
+    const code =
+      error?.code ||
+      'student-list-error';
+    const message = isPermissionDenied
+      ? 'You do not have permission to view this student list.'
+      : 'Failed to load the student list.';
+
+    logFirebaseError('getStudents', error);
+
+    const wrappedError = new Error(message);
+    wrappedError.status = status;
+    wrappedError.code = code;
+    wrappedError.payload = error;
+    wrappedError.response = {
+      success: false,
+      status,
+      code,
+      message
+    };
+
+    throw wrappedError;
+  }
 }
 
 export async function updateUserRoleByEmail(
@@ -905,6 +1063,12 @@ export async function updateUserRoleByEmail(
       String(
         assignedSection || ''
       ).trim();
+
+    // Ensure teachers have a schoolId if one is not already set
+    if (!documentSnapshot.data()?.schoolId) {
+      patch.schoolId = DEFAULT_SCHOOL_ID;
+      patch.schoolName = DEFAULT_SCHOOL_NAME;
+    }
   } else {
     patch.assignedGradeLevel = '';
     patch.assignedSection = '';
@@ -924,4 +1088,58 @@ export async function updateUserRoleByEmail(
         updatedSnapshot.data()
       )
     : null;
+}
+
+export async function migrateStudentsToHaveSchoolId() {
+  const allStudents = await getDocs(
+    query(
+      collection(db, 'users'),
+      where('role', '==', 'student')
+    )
+  );
+
+  console.log('[JustiFi] Checking', allStudents.docs.length, 'students for schoolId...');
+
+  const needsMigration = [];
+  for (const studentDoc of allStudents.docs) {
+    const data = studentDoc.data();
+    if (!data.schoolId) {
+      needsMigration.push({
+        uid: studentDoc.id,
+        email: data.email,
+        name: [data.firstName, data.lastName].filter(Boolean).join(' ')
+      });
+    }
+  }
+
+  if (needsMigration.length === 0) {
+    console.log('[JustiFi] All students have schoolId! No migration needed.');
+    return { success: true, updated: 0 };
+  }
+
+  console.log('[JustiFi] Found', needsMigration.length, 'students needing schoolId migration:');
+  console.log(needsMigration);
+
+  let updated = 0;
+  for (const student of needsMigration) {
+    try {
+      const userRef = doc(db, 'users', student.uid);
+      await updateDoc(userRef, {
+        schoolId: DEFAULT_SCHOOL_ID,
+        schoolName: DEFAULT_SCHOOL_NAME,
+        updatedAt: serverTimestamp()
+      });
+      updated++;
+    } catch (error) {
+      console.error('[JustiFi] Failed to update student', student.email, ':', error.message);
+    }
+  }
+
+  console.log('[JustiFi] Migration complete! Updated', updated, 'students.');
+  return {
+    success: true,
+    checked: allStudents.docs.length,
+    needsMigration: needsMigration.length,
+    updated
+  };
 }

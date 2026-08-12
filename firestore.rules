@@ -31,7 +31,7 @@ service cloud.firestore {
     //   - sex: string (optional)
     //   - gradeLevel: string (optional)
     //   - section: string (optional)
-    //   - school: string (optional)
+    //   - schoolName: string (optional)
     //   - adminId: string (optional)
     //   - department: string (optional)
     //   - position: string (optional)
@@ -109,20 +109,27 @@ service cloud.firestore {
           'lastName',
           'fullName',
           'role',
+          'schoolId',
+          'schoolName',
           'accountStatus',
           'profileCompleted',
           'birthdate',
           'studentNumber',
+          'studentId',
           'age',
           'sex',
           'gradeLevel',
+          'sectionId',
           'section',
-          'school',
+          'teacherId',
           'adminId',
           'department',
           'position',
           'assignedGradeLevel',
           'assignedSection',
+          'assignedGradeLevels',
+          'assignedSections',
+          'uid',
           'badges',
           'quizScores',
           'progress',
@@ -144,20 +151,27 @@ service cloud.firestore {
         && (!('studentNumber' in data) || data.studentNumber is string)
         && (!('age' in data) || data.age is string || data.age is number)
         && (!('sex' in data) || data.sex is string)
+        && (!('schoolId' in data) || data.schoolId is string)
+        && (!('schoolName' in data) || data.schoolName is string)
         && (!('gradeLevel' in data) || data.gradeLevel is string)
+        && (!('sectionId' in data) || data.sectionId is string)
         && (!('section' in data) || data.section is string)
-        && (!('school' in data) || data.school is string)
+        && (!('teacherId' in data) || data.teacherId is string)
         && (!('adminId' in data) || data.adminId is string)
         && (!('department' in data) || data.department is string)
         && (!('position' in data) || data.position is string)
         && (!('assignedGradeLevel' in data) || data.assignedGradeLevel is string)
         && (!('assignedSection' in data) || data.assignedSection is string)
+        && (!('assignedGradeLevels' in data) || data.assignedGradeLevels is list)
+        && (!('assignedSections' in data) || data.assignedSections is list)
         && (!('badges' in data) || data.badges is list)
         && (!('quizScores' in data) || data.quizScores is list)
         && (!('progress' in data) || data.progress is list)
         && (!('profileImage' in data) || data.profileImage is map)
         && (!('createdAt' in data) || isTimestamp(data.createdAt))
-        && (!('updatedAt' in data) || isTimestamp(data.updatedAt));
+        && (!('updatedAt' in data) || isTimestamp(data.updatedAt))
+        && (!('studentId' in data) || data.studentId is string)
+        && (!('uid' in data) || data.uid is string);
     }
 
     function isValidStudentCreate() {

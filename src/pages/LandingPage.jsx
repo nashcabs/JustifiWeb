@@ -382,7 +382,7 @@ export default function LandingPage() {
             <div className="trailer-media">
               <div className="trailer-video">
                 <iframe
-                  src="https://www.youtube-nocookie.com/embed/Ka0UATvk3Mg?rel=0&modestbranding=1"
+                  src="https://www.youtube-nocookie.com/embed/gfTi3e6GcUA"
                   title="JustiFi official trailer"
                   loading="lazy"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -493,11 +493,7 @@ export default function LandingPage() {
           className="characters team-characters-panel"
         >
           <div className="content">
-            <img
-              src="/assets/Background/cha.svg"
-              alt="Characters"
-              className="characters-title-img"
-            />
+            <h2 className="characters-section-title">CHARACTERS</h2>
 
             <div className="character-layout">
               <div className="slider-area">

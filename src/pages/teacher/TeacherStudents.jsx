@@ -42,11 +42,15 @@ function getInitials(name) {
 }
 
 export default function TeacherStudents() {
+  const PAGE_SIZE = 10;
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [students, setStudents] = useState([]);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState('');
   const [progressSort, setProgressSort] = useState('');
   const [grade, setGrade] = useState('');
@@ -73,20 +77,38 @@ export default function TeacherStudents() {
       try {
         if (!user) return;
 
-        const rows = await getStudents(user);
+        const result = await getStudents(user, {
+          pageSize: PAGE_SIZE
+        });
         if (cancelled) return;
 
         setLoadError('');
-        setStudents(Array.isArray(rows) ? rows : []);
+        setStudents(Array.isArray(result?.items) ? result.items : []);
+        setNextCursor(result?.nextCursor || null);
+        setHasMore(Boolean(result?.hasMore));
+
+        console.log('AFTER student list query:', {
+          returnedRecords: Array.isArray(result?.items)
+            ? result.items.length
+            : 0,
+          pageSize: PAGE_SIZE,
+          pagination: true,
+          strategy: 'Firestore cursor + startAfter',
+          hasMore: Boolean(result?.hasMore)
+        });
       } catch (error) {
         console.error(error);
 
         if (!cancelled) {
-          setLoadError(
-            error?.code === 'permission-denied'
-              ? 'Firestore blocked access to the student list. Check teacher permissions and the users collection rules.'
-              : 'Failed to load students.'
-          );
+          const code = error?.code;
+          let message = 'Failed to load students.';
+
+          if (code === 'permission-denied') {
+            message =
+              'Firestore blocked access to the student list. Check teacher permissions and the users collection rules.';
+          }
+
+          setLoadError(message);
           setStudents([]);
         }
       }
@@ -156,6 +178,61 @@ export default function TeacherStudents() {
     }
 
     navigate('/login', { replace: true });
+  }
+
+  async function loadMoreStudents() {
+    if (!user || loadingMore || !hasMore) {
+      return;
+    }
+
+    setLoadingMore(true);
+
+    try {
+      const result = await getStudents(user, {
+        pageSize: PAGE_SIZE,
+        cursor: nextCursor
+      });
+
+      const nextItems = Array.isArray(result?.items)
+        ? result.items
+        : [];
+
+      setStudents((current) => {
+        const existingIds = new Set(
+          (Array.isArray(current) ? current : []).map(
+            (student) => student.id || student.uid
+          )
+        );
+
+        const uniqueItems = nextItems.filter((student) => {
+          const id = student.id || student.uid;
+          if (!id || existingIds.has(id)) {
+            return false;
+          }
+          existingIds.add(id);
+          return true;
+        });
+
+        return [...(Array.isArray(current) ? current : []), ...uniqueItems];
+      });
+
+      setNextCursor(result?.nextCursor || null);
+      setHasMore(Boolean(result?.hasMore));
+    } catch (error) {
+      console.error(error);
+
+      const code = error?.code;
+      let message = 'Failed to load more students.';
+
+      if (code === 'permission-denied') {
+        message =
+          'Firestore blocked access to the student list. Check teacher permissions and the users collection rules.';
+      }
+
+      setLoadError(message);
+    } finally {
+      setLoadingMore(false);
+    }
   }
 
   if (loading) return null;
@@ -399,46 +476,61 @@ export default function TeacherStudents() {
               <p>Try changing the search term or one of the filters.</p>
             </div>
           ) : (
-            <div className="mdps-directory-grid">
-              {filtered.map((student, index) => {
-                const id = student.id || student.uid || `student-${index + 1}`;
-                const fullName = getStudentName(student, index);
-                const average = Math.round(getAverageProgress(student));
+            <>
+              <div className="mdps-directory-grid">
+                {filtered.map((student, index) => {
+                  const id = student.id || student.uid || `student-${index + 1}`;
+                  const fullName = getStudentName(student, index);
+                  const average = Math.round(getAverageProgress(student));
 
-                return (
-                  <button
-                    key={id}
-                    className="mdps-directory-card"
-                    type="button"
-                    onClick={() =>
-                      navigate(
-                        `/teacher/students/view?id=${encodeURIComponent(id)}`
-                      )
-                    }
-                  >
-                    <span className="mdps-directory-avatar">
-                      {getInitials(fullName)}
-                    </span>
-
-                    <span className="mdps-directory-copy">
-                      <strong>{fullName}</strong>
-                      <small>{student.email || 'No email available'}</small>
-
-                      <span className="mdps-directory-meta">
-                        <em>{student.gradeLevel || 'No grade'}</em>
-                        <em>{student.section || 'No section'}</em>
-                        <em>{average}% progress</em>
+                  return (
+                    <button
+                      key={id}
+                      className="mdps-directory-card"
+                      type="button"
+                      onClick={() =>
+                        navigate(
+                          `/teacher/students/view?id=${encodeURIComponent(id)}`
+                        )
+                      }
+                    >
+                      <span className="mdps-directory-avatar">
+                        {getInitials(fullName)}
                       </span>
-                    </span>
 
-                    <span className="mdps-directory-action">
-                      View Progress
-                      <span aria-hidden="true">→</span>
-                    </span>
+                      <span className="mdps-directory-copy">
+                        <strong>{fullName}</strong>
+                        <small>{student.email || 'No email available'}</small>
+
+                        <span className="mdps-directory-meta">
+                          <em>{student.gradeLevel || 'No grade'}</em>
+                          <em>{student.section || 'No section'}</em>
+                          <em>{average}% progress</em>
+                        </span>
+                      </span>
+
+                      <span className="mdps-directory-action">
+                        View Progress
+                        <span aria-hidden="true">→</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {hasMore ? (
+                <div className="mdps-directory-load-more">
+                  <button
+                    className="mdps-btn mdps-btn-primary"
+                    type="button"
+                    onClick={loadMoreStudents}
+                    disabled={loadingMore}
+                  >
+                    {loadingMore ? 'Loading...' : 'Load More Students'}
                   </button>
-                );
-              })}
-            </div>
+                </div>
+              ) : null}
+            </>
           )}
         </section>
       </main>

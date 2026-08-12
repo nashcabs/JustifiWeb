@@ -66,7 +66,7 @@ export default function TeacherProfile() {
       adminId: user.adminId || '',
       department: user.department || '',
       position: user.position || '',
-      school: user.school || ''
+      schoolName: user.schoolName || ''
     });
   }, [loading, user, navigate]);
 
