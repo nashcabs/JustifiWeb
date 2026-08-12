@@ -382,7 +382,7 @@ export default function LandingPage() {
             <div className="trailer-media">
               <div className="trailer-video">
                 <iframe
-                  src="https://www.youtube-nocookie.com/embed/Ka0UATvk3Mg?rel=0&modestbranding=1"
+                  src="https://www.youtube-nocookie.com/embed/gfTi3e6GcUA"
                   title="JustiFi official trailer"
                   loading="lazy"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

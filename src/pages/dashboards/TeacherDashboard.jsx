@@ -100,9 +100,11 @@ export default function TeacherDashboard() {
       try {
         if (!user) return;
         const rows = await getStudents(user);
-        if (!cancelled) setStudents(Array.isArray(rows) ? rows : []);
+        // Ensure we always have an array, even if response structure changes
+        const studentList = Array.isArray(rows) ? rows : (rows?.items || []);
+        if (!cancelled) setStudents(studentList);
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load students:', err);
         if (!cancelled) setStudents([]);
       }
     }
@@ -117,10 +119,11 @@ export default function TeacherDashboard() {
     const list = Array.isArray(students) ? students : [];
     const totalStudents = list.length;
     const activeStudents = list.filter((s) => String(s.accountStatus || 'active').toLowerCase() === 'active').length;
-    const completedProfiles = list.filter((s) => !!s.profileCompleted).length;
+    // Ensure we correctly count completed profiles (must be explicitly true, not just truthy)
+    const completedProfiles = list.filter((s) => s.profileCompleted === true).length;
     const studentsWithProgress = list.filter((s) => hasAnyProgress(s.progress)).length;
     const averageQuizScore = Math.round(computeAverageQuizScorePercent(list));
-    const overallCompletion = totalStudents ? Math.round((completedProfiles / totalStudents) * 100) : 0;
+    const overallCompletion = totalStudents > 0 ? Math.round((completedProfiles / totalStudents) * 100) : 0;
 
     return {
       totalStudents,

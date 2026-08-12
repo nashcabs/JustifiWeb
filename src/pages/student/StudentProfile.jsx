@@ -85,7 +85,7 @@ export default function StudentProfile() {
       sex: user.sex || '',
       gradeLevel: user.gradeLevel || '',
       section: user.section || '',
-      school: user.school || ''
+      schoolName: user.schoolName || ''
     });
   }, [loading, user, navigate]);
 
