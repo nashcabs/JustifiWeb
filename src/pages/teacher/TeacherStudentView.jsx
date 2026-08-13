@@ -14,7 +14,26 @@ import {
 
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { db } from '../../services/firebaseClient.js';
+import TeacherAdminNav from '../../components/TeacherAdminNav.jsx';
+  const BADGE_LIBRARY = {
+  starter: {
+    label: 'Starter',
+    description: 'Created a JustiFi account',
+    image: '/assets/Badges/badge1.png'
+  },
 
+  quiz_rookie: {
+    label: 'Quiz Rookie',
+    description: 'Recorded the first quiz score',
+    image: '/assets/Badges/badge2.png'
+  },
+
+  consistent: {
+    label: 'Consistent',
+    description: 'Reached 70% average progress',
+    image: '/assets/Badges/badge3.png'
+  }
+};
 function useQueryParam(name) {
   const location = useLocation();
 
@@ -208,10 +227,11 @@ export default function TeacherStudentView() {
       : [];
 
     const completedLessons = progressData.length;
-    const badgeCount = Array.isArray(current.badges)
-      ? current.badges.length
-      : 0;
+    const badges = Array.isArray(current.badges)
+  ? current.badges
+  : [];
 
+const badgeCount = badges.length;
     const quizScoresRaw = Array.isArray(current.quizScores)
       ? current.quizScores
       : progressData;
@@ -227,16 +247,19 @@ export default function TeacherStudentView() {
         )
       : 0;
 
+    
+
     return {
-      fullName,
-      completedLessons,
-      badgeCount,
-      quizAverage,
-      quizScores,
-      gradeLevel: current.gradeLevel || 'Not assigned',
-      section: current.section || 'Not assigned',
-      email: current.email || 'Not available'
-    };
+  fullName,
+  completedLessons,
+  badgeCount,
+  badges,
+  quizAverage,
+  quizScores,
+  gradeLevel: current.gradeLevel || 'Not assigned',
+  section: current.section || 'Not assigned',
+  email: current.email || 'Not available'
+};
   }, [student]);
 
   useEffect(() => {
@@ -364,30 +387,7 @@ export default function TeacherStudentView() {
             <span>SCHOOL MANAGEMENT SYSTEM</span>
           </span>
         </button>
-
-        <nav className="mdps-admin-nav" aria-label="Student progress navigation">
-          <button
-            type="button"
-            onClick={() => navigate('/dashboard/teacher')}
-          >
-            Dashboard
-          </button>
-
-          <button
-            className="is-active"
-            type="button"
-            onClick={() => navigate('/teacher/students')}
-          >
-            Students
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/teacher/manage-students')}
-          >
-            Manage
-          </button>
-        </nav>
+<TeacherAdminNav />
 
         <button
           className="mdps-mobile-menu"
@@ -485,6 +485,77 @@ export default function TeacherStudentView() {
               </div>
             )}
           </div>
+<div className="mdps-achievement-section">
+  <div className="mdps-achievement-heading">
+    <div>
+      <p className="mdps-panel-kicker">
+        ACHIEVEMENT PROGRESS
+      </p>
+
+      <h2>Student Badges</h2>
+
+      <p>
+        Badges provide another indication of the student's
+        participation and learning progress.
+      </p>
+    </div>
+
+    <span className="mdps-badge-total">
+      {overview.badgeCount} earned
+    </span>
+  </div>
+
+  <div className="mdps-teacher-badge-grid">
+    {Object.entries(BADGE_LIBRARY).map(
+      ([badgeId, badge]) => {
+        const earned =
+          overview.badges.includes(badgeId);
+
+        return (
+          <article
+            key={badgeId}
+            className={[
+              'mdps-teacher-badge',
+              earned
+                ? 'is-earned'
+                : 'is-locked'
+            ].join(' ')}
+          >
+            <div className="mdps-teacher-badge-image">
+              <img
+                src={badge.image}
+                alt=""
+                aria-hidden="true"
+              />
+
+              {!earned && (
+                <span
+                  className="mdps-badge-lock"
+                  aria-hidden="true"
+                >
+                  🔒
+                </span>
+              )}
+            </div>
+
+            <div className="mdps-teacher-badge-copy">
+              <h3>{badge.label}</h3>
+
+              <p>{badge.description}</p>
+
+              <span>
+                {earned
+                  ? 'Earned'
+                  : 'Not yet earned'}
+              </span>
+            </div>
+          </article>
+        );
+      }
+    )}
+  </div>
+</div>
+          
         </section>
       </main>
 

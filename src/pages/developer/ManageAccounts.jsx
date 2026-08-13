@@ -81,7 +81,7 @@ useEffect(() => {
   if (loading) return null;
 
   return (
-    <>
+    <div className="developer-page">
       <header className="topbar">
         <a className="brand" href="#" onClick={(e) => { e.preventDefault(); navigate('/dashboard/developer'); }}>
           <h1>JustiFi</h1>
@@ -164,6 +164,6 @@ useEffect(() => {
           ) : null}
         </section>
       </main>
-    </>
+    </div>
   );
 }

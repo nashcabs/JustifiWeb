@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 import { getDisplayName, logout, updateCurrentUserProfile } from '../../services/justifiFirebase.js';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { storage } from '../../services/firebaseClient.js';
+import TeacherAdminNav from '../../components/TeacherAdminNav.jsx';
 
 
 const DEFAULT_AVATAR = '/assets/Profile/default-avatar.webp';
@@ -44,7 +45,7 @@ export default function TeacherProfile() {
     adminId: '',
     department: '',
     position: '',
-    school: ''
+    schoolName: ''
   });
 
   useEffect(() => {
@@ -60,14 +61,14 @@ export default function TeacherProfile() {
     }
 
     setForm({
-      firstName: user.firstName || '',
-      middleName: user.middleName || '',
-      lastName: user.lastName || '',
-      adminId: user.adminId || '',
-      department: user.department || '',
-      position: user.position || '',
-      schoolName: user.schoolName || ''
-    });
+  firstName: String(user.firstName ?? ''),
+  middleName: String(user.middleName ?? ''),
+  lastName: String(user.lastName ?? ''),
+  adminId: String(user.adminId ?? ''),
+  department: String(user.department ?? ''),
+  position: String(user.position ?? ''),
+  schoolName: String(user.schoolName ?? '')
+});
   }, [loading, user, navigate]);
 
   const displayName = useMemo(() => getDisplayName(user) || user?.email || 'Admin', [user]);
@@ -113,19 +114,24 @@ export default function TeacherProfile() {
       .replace(/\s+/g, ' ')
       .trim();
 
-    const patch = {
-      firstName,
-      middleName,
-      lastName,
-      fullName,
-      adminId: String(form.adminId || '').trim(),
-      department: String(form.department || '').trim(),
-      position: String(form.position || '').trim(),
-      school: String(form.school || '').trim()
-    };
+   const patch = {
+  firstName,
+  middleName,
+  lastName,
+  fullName,
+  adminId: String(form.adminId ?? '').trim(),
+  department: String(form.department ?? '').trim(),
+  position: String(form.position ?? '').trim(),
+  schoolName: String(form.schoolName ?? '').trim()
+};
 
-    const isComplete =
-      patch.firstName && patch.lastName && patch.adminId && patch.department && patch.position && patch.school;
+   const isComplete =
+  patch.firstName &&
+  patch.lastName &&
+  patch.adminId &&
+  patch.department &&
+  patch.position &&
+  patch.schoolName;
 
     setSaving(true);
     try {
@@ -209,18 +215,7 @@ if (file.size > 10 * 1024 * 1024) {
             <span>SCHOOL MANAGEMENT SYSTEM</span>
           </span>
         </button>
-
-        <nav className="mdps-admin-nav" aria-label="Profile page navigation">
-          <button type="button" onClick={() => navigate('/dashboard/teacher')}>
-            Dashboard
-          </button>
-          <button type="button" onClick={() => navigate('/teacher/students')}>
-            Students
-          </button>
-          <button className="is-active" type="button">
-            Profile
-          </button>
-        </nav>
+<TeacherAdminNav />
 
         <button
           className="mdps-mobile-menu"
@@ -388,7 +383,7 @@ if (file.size > 10 * 1024 * 1024) {
                   <input
                     id="firstName"
                     type="text"
-                    value={form.firstName}
+                   value={form.firstName ?? ''}
                     onChange={(event) =>
                       setForm((state) => ({
                         ...state,
@@ -403,7 +398,7 @@ if (file.size > 10 * 1024 * 1024) {
                   <input
                     id="middleName"
                     type="text"
-                    value={form.middleName}
+                    value={form.middleName ?? ''}
                     onChange={(event) =>
                       setForm((state) => ({
                         ...state,
@@ -418,7 +413,7 @@ if (file.size > 10 * 1024 * 1024) {
                   <input
                     id="lastName"
                     type="text"
-                    value={form.lastName}
+                    value={form.lastName ?? ''}
                     onChange={(event) =>
                       setForm((state) => ({
                         ...state,
@@ -447,7 +442,7 @@ if (file.size > 10 * 1024 * 1024) {
                   <input
                     id="adminId"
                     type="text"
-                    value={form.adminId}
+                    value={form.adminId ?? ''}
                     onChange={(event) =>
                       setForm((state) => ({
                         ...state,
@@ -462,7 +457,7 @@ if (file.size > 10 * 1024 * 1024) {
                   <input
                     id="department"
                     type="text"
-                    value={form.department}
+                    value={form.department ?? ''}
                     onChange={(event) =>
                       setForm((state) => ({
                         ...state,
@@ -477,7 +472,7 @@ if (file.size > 10 * 1024 * 1024) {
                   <input
                     id="position"
                     type="text"
-                    value={form.position}
+                    value={form.position ?? ''}
                     onChange={(event) =>
                       setForm((state) => ({
                         ...state,
@@ -492,11 +487,11 @@ if (file.size > 10 * 1024 * 1024) {
                   <input
                     id="school"
                     type="text"
-                    value={form.school}
+                    value={form.schoolName ?? ''}
                     onChange={(event) =>
                       setForm((state) => ({
                         ...state,
-                        school: event.target.value
+                        schoolName: event.target.value
                       }))
                     }
                   />

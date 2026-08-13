@@ -22,7 +22,7 @@ export default function SystemSettings() {
   if (loading) return null;
 
   return (
-    <>
+    <div className="developer-page">
       <header className="topbar">
         <a className="brand" href="#" onClick={(e) => { e.preventDefault(); navigate('/dashboard/developer'); }}>
           <img className="brand-logo" src="/assets/Title/JustiFiLogo.png" alt="JustiFi logo" />
@@ -53,6 +53,6 @@ export default function SystemSettings() {
           </div>
         </section>
       </main>
-    </>
+    </div>
   );
 }

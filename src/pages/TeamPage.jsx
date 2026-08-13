@@ -57,6 +57,15 @@ export default function TeamPage() {
             </figure>
 
             <figure className="team-card">
+              <img src="/assets/Team/kobe.jpg" alt="HUFANCIA, Kobe Jan Dave M." />
+              <figcaption className="team-overlay">
+                <h3>HUFANCIA</h3>
+                <div>Kobe Jan Dave M.</div>
+                <p>System Designer</p>
+              </figcaption>
+            </figure>
+
+            <figure className="team-card">
               <img src="/assets/Team/q.png" alt="SALVADOR, Qjuin Dominic" />
               <figcaption className="team-overlay">
                 <h3>SALVADOR</h3>

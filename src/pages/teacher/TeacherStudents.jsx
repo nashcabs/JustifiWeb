@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { getStudents, logout } from '../../services/justifiFirebase.js';
+import TeacherAdminNav from '../../components/TeacherAdminNav.jsx';
 
 function getAverageProgress(student) {
   const progress = Array.isArray(student?.progress) ? student.progress : [];
@@ -70,56 +71,37 @@ export default function TeacherStudents() {
     }
   }, [loading, user, navigate]);
 
-  useEffect(() => {
-    let cancelled = false;
+async function loadStudents() {
+  try {
+    if (!user) return;
 
-    async function run() {
-      try {
-        if (!user) return;
+    const rows = await getStudents(user);
 
-        const result = await getStudents(user, {
-          pageSize: PAGE_SIZE
-        });
-        if (cancelled) return;
+    console.log('STUDENT LIST RESULT:', rows);
 
-        setLoadError('');
-        setStudents(Array.isArray(result?.items) ? result.items : []);
-        setNextCursor(result?.nextCursor || null);
-        setHasMore(Boolean(result?.hasMore));
+    setLoadError('');
+    setStudents(Array.isArray(rows) ? rows : []);
+  } catch (error) {
+    console.error('Failed to load Student List:', error);
 
-        console.log('AFTER student list query:', {
-          returnedRecords: Array.isArray(result?.items)
-            ? result.items.length
-            : 0,
-          pageSize: PAGE_SIZE,
-          pagination: true,
-          strategy: 'Firestore cursor + startAfter',
-          hasMore: Boolean(result?.hasMore)
-        });
-      } catch (error) {
-        console.error(error);
+    setLoadError(
+      error?.code === 'permission-denied'
+        ? 'Firestore blocked access to the student list. Check teacher permissions and the users collection rules.'
+        : 'Failed to load students.'
+    );
 
-        if (!cancelled) {
-          const code = error?.code;
-          let message = 'Failed to load students.';
+    setStudents([]);
+  }
+}
 
-          if (code === 'permission-denied') {
-            message =
-              'Firestore blocked access to the student list. Check teacher permissions and the users collection rules.';
-          }
+useEffect(() => {
+  if (loading || !user?.uid) return;
 
-          setLoadError(message);
-          setStudents([]);
-        }
-      }
-    }
+  loadStudents();
 
-    run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+  // Only reload when the logged-in account changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [loading, user?.uid]);
 
   const adminName = useMemo(() => {
     return (
@@ -260,26 +242,7 @@ export default function TeacherStudents() {
             <span>SCHOOL MANAGEMENT SYSTEM</span>
           </span>
         </button>
-
-        <nav className="mdps-admin-nav" aria-label="Student list navigation">
-          <button
-            type="button"
-            onClick={() => navigate('/dashboard/teacher')}
-          >
-            Dashboard
-          </button>
-
-          <button className="is-active" type="button">
-            Students
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/teacher/manage-students')}
-          >
-            Manage
-          </button>
-        </nav>
+<TeacherAdminNav />
 
         <button
           className="mdps-mobile-menu"

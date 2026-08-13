@@ -241,7 +241,7 @@ export default function UpdateAnnouncement() {
   if (loading) return null;
 
   return (
-    <>
+    <div className="developer-page">
       <header className="topbar">
         <a className="brand" href="#" onClick={(e) => e.preventDefault()}>
           <h1 className="brand-logo">JustiFi</h1>
@@ -391,6 +391,6 @@ export default function UpdateAnnouncement() {
           {toast.message}
         </div>
       ) : null}
-    </>
+    </div>
   );
 }

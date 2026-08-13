@@ -11,6 +11,7 @@ import {
 } from 'firebase/auth';
 
 import {
+   addDoc,
   collection,
   doc,
   getDoc,
@@ -62,6 +63,7 @@ function normalizeRole(value, fallback = 'student') {
 
   return 'student';
 }
+
 
 function buildFullName(profile = {}) {
   return [
@@ -1142,4 +1144,26 @@ export async function migrateStudentsToHaveSchoolId() {
     needsMigration: needsMigration.length,
     updated
   };
+}
+export async function submitContactMessage(payload = {}) {
+  const name = String(payload.name || '').trim();
+  const email = String(payload.email || '').trim();
+  const subject = String(payload.subject || '').trim();
+  const message = String(payload.message || '').trim();
+
+  if (!name || !email || !subject || !message) {
+    throw new Error('Please complete all contact form fields.');
+  }
+
+  const docRef = await addDoc(collection(db, 'contactMessages'), {
+    name,
+    email,
+    subject,
+    message,
+    status: 'unread',
+    source: 'landing-page',
+    createdAt: serverTimestamp(),
+  });
+
+  return docRef.id;
 }

@@ -5,6 +5,7 @@ import { initLandingPage } from '../legacy/landing-init.js';
 import {
   getDashboardPath,
   getDisplayName,
+  submitContactMessage,
 } from '../services/justifiFirebase.js';
 
 const GAME_FEATURES = [
@@ -63,11 +64,18 @@ const TEAM_MEMBERS = [
     photo: '/assets/Team/jehu.png',
   },
   {
+    name: 'Hufancia, Kobe Jan Dave M.',
+    role: 'System Designer',
+    initials: 'JG',
+    photo: '/assets/Team/kobe.jpg',
+  },
+  {
     name: 'Salvador, Qjuin Dominic',
     role: 'System Analyst / Game Developer',
     initials: 'QS',
     photo: '/assets/Team/q.png',
   },
+  
 ];
 
 const SUPPORT_PARTNER_ASSETS = {
@@ -94,27 +102,7 @@ function hideBrokenImage(event) {
   event.currentTarget.style.display = 'none';
 }
 
-function handleContactSubmit(event) {
-  event.preventDefault();
 
-  const form = event.currentTarget;
-  const formData = new FormData(form);
-
-  const name = String(formData.get('name') || '').trim();
-  const email = String(formData.get('email') || '').trim();
-  const subject = String(formData.get('subject') || 'JustiFi Website Inquiry').trim();
-  const message = String(formData.get('message') || '').trim();
-
-  const body = [
-    `Name: ${name}`,
-    `Email: ${email}`,
-    '',
-    message,
-  ].join('\n');
-
-  window.location.href =
-    `mailto:javachip.exe@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-}
 
 
 export default function LandingPage() {
@@ -122,6 +110,9 @@ export default function LandingPage() {
   const location = useLocation();
   const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [contactSending, setContactSending] = useState(false);
+const [contactStatus, setContactStatus] = useState('');
+const [contactSuccess, setContactSuccess] = useState(false);
 
   const navLabel = useMemo(() => getDisplayName(user), [user]);
   const navHref = useMemo(
@@ -188,7 +179,48 @@ export default function LandingPage() {
       }
     };
   }, []);
+async function handleContactSubmit(event) {
+  event.preventDefault();
 
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+
+  const payload = {
+    name: String(formData.get('name') || '').trim(),
+    email: String(formData.get('email') || '').trim(),
+    subject: String(formData.get('subject') || '').trim(),
+    message: String(formData.get('message') || '').trim(),
+  };
+
+  setContactSending(true);
+  setContactStatus('');
+  setContactSuccess(false);
+
+  try {
+    await submitContactMessage(payload);
+
+    form.reset();
+
+    setContactSuccess(true);
+    setContactStatus('Message sent successfully. Thank you for contacting us!');
+  } catch (error) {
+    console.error('Contact form submission failed:', error);
+
+    setContactSuccess(false);
+
+    if (error?.code === 'permission-denied') {
+      setContactStatus(
+        'Unable to send message. Firestore permission is not configured yet.'
+      );
+    } else {
+      setContactStatus(
+        error?.message || 'Unable to send your message. Please try again.'
+      );
+    }
+  } finally {
+    setContactSending(false);
+  }
+}
   return (
     <>
       <nav className="navbar" aria-label="Main navigation">
@@ -618,12 +650,7 @@ export default function LandingPage() {
                   </div>
                 </dl>
 
-                <a
-                  className="support-reference-button support-reference-button--ncmh"
-                  href="tel:1553"
-                >
-                  Talk to Someone Today
-                </a>
+                
               </article>
 
               <article className="support-reference-card support-reference-card--pnp">
@@ -659,9 +686,14 @@ export default function LandingPage() {
                   the PNP-ACG website before sending sensitive details.
                 </p>
 
-                <span className="support-reference-button support-reference-button--pnp">
-                  File a Cybercrime Complaint
-                </span>
+               <a
+  className="support-reference-button support-reference-button--pnp"
+  href="https://www.cybersecurityintelligence.com/philippine-national-police-anti-cybercrime-group-pnp-acg-4731.html"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  File a Cybercrime Complaint
+</a>
               </article>
             </div>
 
@@ -890,12 +922,27 @@ export default function LandingPage() {
               </div>
 
               <div className="contact-form-footer">
-                <p>We typically reply within 2 business days.</p>
+  <p
+    aria-live="polite"
+    style={{
+      color: contactStatus
+        ? contactSuccess
+          ? '#d9f5d0'
+          : '#ffd3d3'
+        : undefined,
+    }}
+  >
+    {contactStatus || 'We typically reply within 2 business days.'}
+  </p>
 
-                <button className="contact-submit" type="submit">
-                  Send Message
-                </button>
-              </div>
+  <button
+    className="contact-submit"
+    type="submit"
+    disabled={contactSending}
+  >
+    {contactSending ? 'Sending...' : 'Send Message'}
+  </button>
+</div>
             </form>
           </div>
         </div>

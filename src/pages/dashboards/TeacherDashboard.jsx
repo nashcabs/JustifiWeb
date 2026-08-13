@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { getDisplayName, getStudents, logout } from '../../services/justifiFirebase.js';
+import TeacherAdminNav from '../../components/TeacherAdminNav.jsx';
 
 
 function hasAnyProgress(progress) {
@@ -326,22 +327,7 @@ export default function TeacherDashboard() {
             <span>SCHOOL MANAGEMENT SYSTEM</span>
           </span>
         </button>
-
-        <nav className="mdps-admin-nav" aria-label="Admin dashboard navigation">
-          <button type="button" onClick={() => navigate('/')}>
-            Website
-          </button>
-          <button type="button" onClick={() => navigate('/teacher/students')}>
-            Students
-          </button>
-          <button
-            className="is-active"
-            type="button"
-            onClick={() => setMenuOpen(true)}
-          >
-            Admin
-          </button>
-        </nav>
+<TeacherAdminNav />
 
         <button
           className="mdps-mobile-menu"

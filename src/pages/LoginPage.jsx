@@ -1,41 +1,28 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
   getCurrentUser,
   getDashboardPath,
   login,
-  registerUser,
   resetPassword
 } from '../services/justifiFirebase.js';
 
 const REMEMBER_KEY = 'justifi_remember_me';
 const REMEMBER_EMAIL_KEY = 'justifi_remember_email';
 
-const DEFAULT_SCHOOL_ID = 'mdps';
-const DEFAULT_SCHOOL_NAME = 'Mother of Divine Providence School';
-
-function buildSectionId(gradeLevel, section) {
-  return [gradeLevel, section]
-    .map((value) => String(value || '').trim().toLowerCase())
-    .filter(Boolean)
-    .join('-')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
 function getFriendlyFirebaseMessage(error, fallback) {
   const code = String(error?.code || '');
 
   const messages = {
-    'auth/email-already-in-use': 'That email address is already registered.',
     'auth/invalid-email': 'Please enter a valid email address.',
-    'auth/weak-password': 'Password must be at least 6 characters.',
     'auth/user-not-found': 'No account was found for that email.',
     'auth/wrong-password': 'The password you entered is incorrect.',
     'auth/invalid-credential': 'The email or password is incorrect.',
-    'auth/too-many-requests': 'Too many attempts. Please wait before trying again.',
-    'auth/network-request-failed': 'Network error. Check your internet connection.'
+    'auth/too-many-requests':
+      'Too many login attempts. Please wait before trying again.',
+    'auth/network-request-failed':
+      'Network error. Check your internet connection.'
   };
 
   return messages[code] || error?.message || fallback;
@@ -45,45 +32,22 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [mode, setMode] = useState('login');
-  const [floatingMessage, setFloatingMessage] = useState(null);
-
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [loginBusy, setLoginBusy] = useState(false);
 
-  const [regRole, setRegRole] = useState('student');
-  const [regFirstName, setRegFirstName] = useState('');
-  const [regMiddleName, setRegMiddleName] = useState('');
-  const [regLastName, setRegLastName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-
-  const [regStudentNumber, setRegStudentNumber] = useState('');
-  const [regGradeLevel, setRegGradeLevel] = useState('');
-  const [regSection, setRegSection] = useState('');
-  const [registerBusy, setRegisterBusy] = useState(false);
-
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotBusy, setForgotBusy] = useState(false);
 
-  const isStudentRegistration = regRole === 'student';
-
-  const panelClassName = useMemo(() => {
-    return [
-      'auth-panel',
-      mode === 'register' ? 'show-register' : ''
-    ]
-      .filter(Boolean)
-      .join(' ');
-  }, [mode]);
+  const [floatingMessage, setFloatingMessage] = useState('');
 
   function showFloatingPanel(message) {
-    setFloatingMessage(message);
+    setFloatingMessage(String(message || ''));
+
     window.setTimeout(() => {
-      setFloatingMessage(null);
+      setFloatingMessage('');
     }, 3500);
   }
 
@@ -105,7 +69,7 @@ export default function LoginPage() {
     const email =
       localStorage.getItem(REMEMBER_EMAIL_KEY) || '';
 
-    // Remove the old stored-password value, if it exists.
+    // Remove old stored password if an older version saved one.
     localStorage.removeItem('justifi_remember_password');
 
     setRememberMe(remember);
@@ -113,18 +77,6 @@ export default function LoginPage() {
     if (remember) {
       setLoginEmail(email);
     }
-  }
-
-  function clearRegistrationForm() {
-    setRegRole('student');
-    setRegFirstName('');
-    setRegMiddleName('');
-    setRegLastName('');
-    setRegEmail('');
-    setRegPassword('');
-    setRegStudentNumber('');
-    setRegGradeLevel('');
-    setRegSection('');
   }
 
   useEffect(() => {
@@ -143,7 +95,7 @@ export default function LoginPage() {
           );
         }
       } catch {
-        // The login page remains available when no session exists.
+        // Stay on login page when no session exists.
       }
     }
 
@@ -165,124 +117,6 @@ export default function LoginPage() {
       cancelled = true;
     };
   }, [navigate, searchParams, setSearchParams]);
-
-  async function handleRegister(event) {
-    event.preventDefault();
-
-    const firstName = regFirstName.trim();
-    const middleName = regMiddleName.trim();
-    const lastName = regLastName.trim();
-    const email = regEmail.trim().toLowerCase();
-    const password = regPassword;
-
-    if (!firstName || !lastName || !email || !password) {
-      showFloatingPanel(
-        'Please complete all required account fields.'
-      );
-      return;
-    }
-
-    if (password.length < 6) {
-      showFloatingPanel(
-        'Password must be at least 6 characters.'
-      );
-      return;
-    }
-
-    if (isStudentRegistration) {
-      if (
-        !regStudentNumber.trim() ||
-        !regGradeLevel ||
-        !regSection.trim()
-      ) {
-        showFloatingPanel(
-          'Student number, grade level, and section are required.'
-        );
-        return;
-      }
-    }
-
-    const section =
-      isStudentRegistration
-        ? regSection.trim()
-        : '';
-
-    const gradeLevel =
-      isStudentRegistration
-        ? regGradeLevel
-        : '';
-
-    const payload = {
-      role: regRole,
-
-      firstName,
-      middleName,
-      lastName,
-
-      email,
-      password,
-
-      schoolId:
-        isStudentRegistration
-          ? DEFAULT_SCHOOL_ID
-          : null,
-
-      school:
-        isStudentRegistration
-          ? DEFAULT_SCHOOL_NAME
-          : '',
-
-      studentNumber:
-        isStudentRegistration
-          ? regStudentNumber.trim()
-          : '',
-
-      studentId:
-        isStudentRegistration
-          ? regStudentNumber.trim()
-          : '',
-
-      gradeLevel,
-
-      section,
-
-      sectionId:
-        isStudentRegistration
-          ? buildSectionId(
-              gradeLevel,
-              section
-            )
-          : ''
-    };
-
-    try {
-      setRegisterBusy(true);
-
-      await registerUser(payload);
-
-      clearRegistrationForm();
-      setLoginEmail(email);
-      setMode('login');
-
-      showFloatingPanel(
-        'Verification email sent. Verify your email before logging in.'
-      );
-    } catch (error) {
-      console.error(
-        '[JustiFi] Registration UI error',
-        error
-      );
-
-      showFloatingPanel(
-        getFriendlyFirebaseMessage(
-          error,
-          'Registration failed.'
-        )
-      );
-    } finally {
-      setRegisterBusy(false);
-    }
-  }
 
   async function handleLogin(event) {
     event.preventDefault();
@@ -309,8 +143,6 @@ export default function LoginPage() {
         { remember: rememberMe }
       );
 
-      // Only the email is stored locally. Passwords should not be
-      // stored in localStorage.
       saveRememberedLogin(
         email,
         rememberMe
@@ -376,397 +208,229 @@ export default function LoginPage() {
   }
 
   return (
-    <>
-      <div className="background">
-        <img
-          src="/assets/Login/LoginBG.jpg"
-          alt=""
-          aria-hidden="true"
-        />
-      </div>
+    <div className="justifi-login-page">
+      <div
+        className="justifi-login-background"
+        aria-hidden="true"
+      />
 
-      <div className="auth-frame">
-        <img
-          src="/assets/Background/frame.svg"
-          alt=""
-          className="frame-img"
-          aria-hidden="true"
-        />
+      <div
+        className="justifi-login-overlay"
+        aria-hidden="true"
+      />
 
-        <div className="auth-container">
-          <div className={panelClassName}>
-            <form
-              className="form login"
-              onSubmit={handleLogin}
-            >
-              <img
-                src="/assets/Login/login.svg"
-                alt="Login"
-                className="login-title-img"
-              />
+      <a
+        href="/"
+        className="justifi-login-back"
+        aria-label="Back to JustiFi website"
+      >
+        Back to website
+      </a>
+
+      <main className="justifi-login-shell">
+        <section className="justifi-login-brand">
+          <span className="justifi-login-kicker">
+            JUSTIFI
+          </span>
+
+          <h1>
+            Legal knowledge.
+            <br />
+            Better decisions.
+          </h1>
+
+          <p>
+            Sign in to continue your legal literacy
+            learning experience.
+          </p>
+
+          <div className="justifi-brand-line" />
+
+          <small>
+            Learn your rights. Understand the law.
+            Make informed choices.
+          </small>
+        </section>
+
+        <section className="justifi-login-card">
+          <div className="justifi-login-card-heading">
+
+
+            <div>
+              <p>WELCOME BACK</p>
+              <h2>Sign in to JustiFi</h2>
+            </div>
+          </div>
+
+          <p className="justifi-login-description">
+            Enter your registered account credentials
+            to continue.
+          </p>
+
+          <form
+            className="justifi-login-form"
+            onSubmit={handleLogin}
+          >
+            <div className="justifi-login-field">
+              <label htmlFor="loginEmail">
+                Email address
+              </label>
 
               <input
+                id="loginEmail"
+                type="email"
                 value={loginEmail}
                 onChange={(event) =>
                   setLoginEmail(event.target.value)
                 }
-                type="email"
-                placeholder="Email"
+                placeholder="you@example.com"
                 autoComplete="email"
                 required
               />
+            </div>
+
+            <div className="justifi-login-field">
+              <label htmlFor="loginPassword">
+                Password
+              </label>
 
               <input
+                id="loginPassword"
+                type="password"
                 value={loginPassword}
                 onChange={(event) =>
                   setLoginPassword(event.target.value)
                 }
-                type="password"
-                placeholder="Password"
+                placeholder="Enter your password"
                 autoComplete="current-password"
                 required
               />
-
-              <div className="remember-forgot-row">
-                <label className="remember-row">
-                  <input
-                    checked={rememberMe}
-                    onChange={(event) =>
-                      setRememberMe(
-                        event.target.checked
-                      )
-                    }
-                    type="checkbox"
-                  />
-                  Remember Me
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForgotEmail(loginEmail);
-                    setForgotOpen(true);
-                  }}
-                  className="forgot-link forgot-link-button"
-                >
-                  Forgot Password?
-                </button>
-              </div>
-
-              <button
-                className="login-btn"
-                type="submit"
-                disabled={loginBusy}
-              >
-                {loginBusy
-                  ? 'Logging in...'
-                  : 'Login'}
-              </button>
-
-              <p className="auth-prompt">
-                Don't have an account?
-              </p>
-
-              <button
-                className="switch"
-                type="button"
-                onClick={() =>
-                  setMode('register')
-                }
-              >
-                Register
-              </button>
-
-              <a
-                className="back"
-                href="/"
-              >
-                <img
-                  src="/assets/Login/back-button.png"
-                  alt="Back to Site"
-                />
-              </a>
-            </form>
-
-            <div className="info-area">
-              <img
-                src="/assets/Login/justifi-logo.png"
-                alt="JustiFi"
-                className="justifi-logo"
-              />
             </div>
 
-            <form
-              className="form register register-scroll"
-              onSubmit={handleRegister}
-            >
-              <img
-                src="/assets/Login/ca.svg"
-                alt="Create Account"
-                className="register-title-img"
-              />
+            <div className="justifi-login-options">
+              <label className="justifi-remember">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) =>
+                    setRememberMe(
+                      event.target.checked
+                    )
+                  }
+                />
 
-              <label className="register-field-label">
-                Account type
+                <span>Remember me</span>
               </label>
 
-              <select
-                className="auth-select"
-                value={regRole}
-                onChange={(event) =>
-                  setRegRole(event.target.value)
-                }
-              >
-                <option value="student">
-                  Student
-                </option>
-                <option value="nonStudent">
-                  Not a Student
-                </option>
-              </select>
-
-              <div className="two-col">
-                <input
-                  value={regLastName}
-                  onChange={(event) =>
-                    setRegLastName(
-                      event.target.value
-                    )
-                  }
-                  type="text"
-                  placeholder="Last name *"
-                  autoComplete="family-name"
-                  required
-                />
-
-                <input
-                  value={regFirstName}
-                  onChange={(event) =>
-                    setRegFirstName(
-                      event.target.value
-                    )
-                  }
-                  type="text"
-                  placeholder="First name *"
-                  autoComplete="given-name"
-                  required
-                />
-              </div>
-
-              <input
-                value={regMiddleName}
-                onChange={(event) =>
-                  setRegMiddleName(
-                    event.target.value
-                  )
-                }
-                type="text"
-                placeholder="Middle name (optional)"
-                autoComplete="additional-name"
-              />
-
-              {isStudentRegistration ? (
-                <div className="student-registration-fields">
-                  <input
-                    value={regStudentNumber}
-                    onChange={(event) =>
-                      setRegStudentNumber(
-                        event.target.value
-                      )
-                    }
-                    type="text"
-                    placeholder="Student ID / Student number *"
-                    required
-                  />
-
-                  <div className="two-col">
-                    <select
-                      className="auth-select"
-                      value={regGradeLevel}
-                      onChange={(event) =>
-                        setRegGradeLevel(
-                          event.target.value
-                        )
-                      }
-                      required
-                    >
-                      <option value="">
-                        Select grade level *
-                      </option>
-                      <option value="Grade 11">
-                        Grade 11
-                      </option>
-                      <option value="Grade 12">
-                        Grade 12
-                      </option>
-                    </select>
-
-                    <input
-                      value={regSection}
-                      onChange={(event) =>
-                        setRegSection(
-                          event.target.value
-                        )
-                      }
-                      type="text"
-                      placeholder="Section *"
-                      required
-                    />
-                  </div>
-
-                  <p className="register-school-note">
-                    School: {DEFAULT_SCHOOL_NAME}
-                  </p>
-                </div>
-              ) : (
-                <p className="register-school-note">
-                  This account will be registered as
-                  “Not a Student” and will not be assigned
-                  to a grade or section.
-                </p>
-              )}
-
-              <input
-                value={regEmail}
-                onChange={(event) =>
-                  setRegEmail(event.target.value)
-                }
-                type="email"
-                placeholder="Email *"
-                autoComplete="email"
-                required
-              />
-
-              <input
-                value={regPassword}
-                onChange={(event) =>
-                  setRegPassword(
-                    event.target.value
-                  )
-                }
-                type="password"
-                placeholder="Password (at least 6 characters) *"
-                autoComplete="new-password"
-                minLength={6}
-                required
-              />
-
               <button
-                type="submit"
-                disabled={registerBusy}
-              >
-                {registerBusy
-                  ? 'Creating account...'
-                  : 'Register'}
-              </button>
-
-              <p>Already have an account?</p>
-
-              <button
-                className="switch"
                 type="button"
-                onClick={() =>
-                  setMode('login')
-                }
+                className="justifi-forgot-button"
+                onClick={() => {
+                  setForgotEmail(loginEmail);
+                  setForgotOpen(true);
+                }}
               >
-                Login
+                Forgot password?
               </button>
+            </div>
 
-              <a
-                className="back"
-                href="/"
-              >
-                <img
-                  src="/assets/Login/back-button.png"
-                  alt="Back to Site"
-                />
-              </a>
-            </form>
+            <button
+              className="justifi-login-submit"
+              type="submit"
+              disabled={loginBusy}
+            >
+              {loginBusy
+                ? 'Signing in...'
+                : 'Sign In'}
+            </button>
+          </form>
+
+          <div className="justifi-login-footer">
+            <span />
+            <p>JUSTIFI LEGAL LITERACY PLATFORM</p>
+            <span />
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
 
-      <div
-        className={[
-          'forgot-modal',
-          forgotOpen ? '' : 'hidden'
-        ].join(' ')}
-      >
-        <form
-          className="forgot-modal-content"
-          onSubmit={handleSendReset}
-        >
+      {forgotOpen && (
+        <div className="justifi-reset-modal">
           <button
-            className="forgot-modal-close"
+            className="justifi-reset-overlay"
             type="button"
+            aria-label="Close reset password"
             onClick={() =>
               setForgotOpen(false)
             }
-            aria-label="Close reset-password form"
-          >
-            &times;
-          </button>
-
-          <h2>Reset Password</h2>
-
-          <p>
-            Enter your email address and we'll
-            send you a password-reset link.
-          </p>
-
-          <input
-            value={forgotEmail}
-            onChange={(event) =>
-              setForgotEmail(
-                event.target.value
-              )
-            }
-            type="email"
-            placeholder="Enter your email"
-            autoComplete="email"
-            required
           />
 
-          <button
-            type="submit"
-            disabled={forgotBusy}
+          <form
+            className="justifi-reset-card"
+            onSubmit={handleSendReset}
           >
-            {forgotBusy
-              ? 'Sending...'
-              : 'Send Reset Link'}
-          </button>
-
-          <p className="forgot-modal-back">
             <button
+              className="justifi-reset-close"
               type="button"
-              className="forgot-back-button"
+              aria-label="Close"
               onClick={() =>
                 setForgotOpen(false)
               }
             >
-              Back to Login
+              ×
             </button>
-          </p>
-        </form>
 
-        <button
-          className="forgot-modal-overlay"
-          type="button"
-          aria-label="Close reset-password form"
-          onClick={() =>
-            setForgotOpen(false)
-          }
-        />
-      </div>
+            <span className="justifi-reset-kicker">
+              ACCOUNT RECOVERY
+            </span>
+
+            <h2>Reset your password</h2>
+
+            <p>
+              Enter your registered email address.
+              We'll send you a password reset link.
+            </p>
+
+            <label htmlFor="forgotEmail">
+              Email address
+            </label>
+
+            <input
+              id="forgotEmail"
+              type="email"
+              value={forgotEmail}
+              onChange={(event) =>
+                setForgotEmail(
+                  event.target.value
+                )
+              }
+              placeholder="you@example.com"
+              autoComplete="email"
+              required
+            />
+
+            <button
+              className="justifi-reset-submit"
+              type="submit"
+              disabled={forgotBusy}
+            >
+              {forgotBusy
+                ? 'Sending...'
+                : 'Send Reset Link'}
+            </button>
+          </form>
+        </div>
+      )}
 
       <div
         className={[
-          'floating-panel',
-          floatingMessage ? '' : 'hidden'
+          'justifi-login-message',
+          floatingMessage ? 'show' : ''
         ].join(' ')}
+        role="status"
+        aria-live="polite"
       >
-        <span>{floatingMessage || ''}</span>
+        {floatingMessage}
       </div>
-    </>
+    </div>
   );
 }

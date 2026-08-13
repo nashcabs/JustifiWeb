@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { getStudents, updateUserProfileById } from '../../services/justifiFirebase.js';
+import TeacherAdminNav from '../../components/TeacherAdminNav.jsx';
 
 
 export default function TeacherManageStudents() {
@@ -154,18 +155,7 @@ export default function TeacherManageStudents() {
             <span>SCHOOL MANAGEMENT SYSTEM</span>
           </span>
         </button>
-
-        <nav className="mdps-admin-nav" aria-label="Admin page navigation">
-          <button type="button" onClick={() => navigate('/dashboard/teacher')}>
-            Dashboard
-          </button>
-          <button type="button" onClick={() => navigate('/teacher/students')}>
-            Student List
-          </button>
-          <button className="is-active" type="button">
-            Manage
-          </button>
-        </nav>
+<TeacherAdminNav />
 
         <button
           className="mdps-mobile-menu"

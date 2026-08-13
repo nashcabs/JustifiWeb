@@ -16,7 +16,6 @@ import TeacherStudentView from './pages/teacher/TeacherStudentView.jsx';
 import AssignRoles from './pages/developer/AssignRoles.jsx';
 import ManageAccounts from './pages/developer/ManageAccounts.jsx';
 import SystemSettings from './pages/developer/SystemSettings.jsx';
-import UpdateAnnouncement from './pages/developer/UpdateAnnouncement.jsx';
 import StudentQuiz from "./pages/student/StudentQuiz";
 
 export default function App() {
@@ -123,14 +122,6 @@ export default function App() {
           element={
             <RequireRole role="developer">
               <SystemSettings />
-            </RequireRole>
-          }
-        />
-        <Route
-          path="/developer/update-announcement"
-          element={
-            <RequireRole role="developer">
-              <UpdateAnnouncement />
             </RequireRole>
           }
         />

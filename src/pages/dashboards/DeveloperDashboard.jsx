@@ -77,7 +77,7 @@ export default function DeveloperDashboard() {
   if (loading) return null;
 
   return (
-    <>
+    <div className="developer-page">
       <header className="topbar">
         <a className="brand" href="#" onClick={(e) => e.preventDefault()}>
           <h1 className="brand-logo">JustiFi</h1>
@@ -116,7 +116,6 @@ export default function DeveloperDashboard() {
         <div className="side-menu-body">
           <button className="menu-link" onClick={() => navigate('/developer/assign-roles')}>Assign Roles</button>
           <button className="menu-link" onClick={() => navigate('/developer/manage-accounts')}>Manage Accounts</button>
-          <button className="menu-link" onClick={() => navigate('/developer/update-announcement')}>Update Announcement</button>
           <button className="menu-link logout-btn" onClick={onLogout}>Logout</button>
         </div>
       </aside>
@@ -170,24 +169,31 @@ export default function DeveloperDashboard() {
           <p className="card-kicker">QUICK ACCESS</p>
           <h2>Main Developer Tools</h2>
 
-          <div className="action-grid">
-            <button className="feature-card" onClick={() => navigate('/developer/assign-roles')}>
-              <h3>Assign Roles</h3>
-              <p>Promote users or change account roles inside the system.</p>
-            </button>
+          <div className="action-grid developer-action-grid">
+  <button
+    className="feature-card"
+    type="button"
+    onClick={() => navigate('/developer/assign-roles')}
+  >
+    <h3>Assign Roles</h3>
+    <p>
+      Promote users or change account roles inside the system.
+    </p>
+  </button>
 
-            <button className="feature-card" onClick={() => navigate('/developer/manage-accounts')}>
-              <h3>Manage Accounts</h3>
-              <p>View, organize, and monitor registered user accounts.</p>
-            </button>
-
-            <button className="feature-card" onClick={() => navigate('/developer/update-announcement')}>
-              <h3>Update Announcement</h3>
-              <p>Create, edit, and manage system announcements.</p>
-            </button>
-          </div>
+  <button
+    className="feature-card"
+    type="button"
+    onClick={() => navigate('/developer/manage-accounts')}
+  >
+    <h3>Manage Accounts</h3>
+    <p>
+      View, organize, and monitor registered user accounts.
+    </p>
+  </button>
+</div>
         </section>
       </main>
-    </>
+    </div>
   );
 }
