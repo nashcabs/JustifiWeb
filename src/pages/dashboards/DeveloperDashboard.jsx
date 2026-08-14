@@ -116,6 +116,7 @@ export default function DeveloperDashboard() {
         <div className="side-menu-body">
           <button className="menu-link" onClick={() => navigate('/developer/assign-roles')}>Assign Roles</button>
           <button className="menu-link" onClick={() => navigate('/developer/manage-accounts')}>Manage Accounts</button>
+         <button className="menu-link" onClick={() => navigate('/developer/inquiries')}>Manage Inquiries</button>
           <button className="menu-link logout-btn" onClick={onLogout}>Logout</button>
         </div>
       </aside>
@@ -191,6 +192,16 @@ export default function DeveloperDashboard() {
       View, organize, and monitor registered user accounts.
     </p>
   </button>
+  <button
+  className="feature-card"
+  type="button"
+  onClick={() => navigate('/developer/inquiries')}
+>
+  <h3>Manage Inquiries</h3>
+  <p>
+    Review and manage messages submitted through the JustiFi contact form.
+  </p>
+</button>
 </div>
         </section>
       </main>

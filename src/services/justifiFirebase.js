@@ -18,6 +18,7 @@ import {
   getDocs,
   limit,
   onSnapshot,
+  orderBy,
   query,
   serverTimestamp,
   setDoc,
@@ -1166,4 +1167,49 @@ export async function submitContactMessage(payload = {}) {
   });
 
   return docRef.id;
+}
+export function subscribeToContactMessages(onNext, onError) {
+  const messagesQuery = query(
+    collection(db, 'contactMessages'),
+    orderBy('createdAt', 'desc')
+  );
+
+  return onSnapshot(
+    messagesQuery,
+    (snapshot) => {
+      const messages = snapshot.docs.map((document) => ({
+        id: document.id,
+        ...document.data()
+      }));
+
+      onNext?.(messages);
+    },
+    (error) => {
+      console.error('Failed to load contact messages:', error);
+      onError?.(error);
+    }
+  );
+}
+
+export async function updateContactMessageStatus(
+  messageId,
+  status
+) {
+  const allowedStatuses = [
+    'unread',
+    'read',
+    'resolved'
+  ];
+
+  if (!allowedStatuses.includes(status)) {
+    throw new Error('Invalid inquiry status.');
+  }
+
+ await updateDoc(
+  doc(db, 'contactMessages', messageId),
+  {
+    status,
+    updatedAt: serverTimestamp()
+  }
+);
 }
