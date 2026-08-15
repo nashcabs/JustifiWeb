@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { subscribeToUsers } from '../../services/justifiFirebase.js';
+import { formatRoleLabel, subscribeToUsers } from '../../services/justifiFirebase.js';
 
 export default function ManageAccounts() {
   const navigate = useNavigate();
@@ -125,7 +125,7 @@ useEffect(() => {
                 <option value="">All roles</option>
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
-                <option value="developer">Developer</option>
+                <option value="developer">Organizational Admin</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
@@ -154,7 +154,7 @@ useEffect(() => {
                     <div className="user-info">
                       <div className="user-name">{fullName}</div>
                       <div className="user-email">{account.email || 'No email'}</div>
-                      <div className="user-role">Role: <strong>{role}</strong></div>
+                      <div className="user-role">Role: <strong>{formatRoleLabel(role)}</strong></div>
                       <div className="user-role">Status: <strong>{status}</strong></div>
                     </div>
                   </div>

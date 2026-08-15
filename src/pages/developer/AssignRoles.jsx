@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { subscribeToUsers, updateUserRoleByEmail } from '../../services/justifiFirebase.js';
+import { formatRoleLabel, subscribeToUsers, updateUserRoleByEmail } from '../../services/justifiFirebase.js';
 
 
 export default function AssignRoles() {
@@ -173,7 +173,7 @@ export default function AssignRoles() {
                 <option value="">All Roles</option>
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
-                <option value="developer">Developer</option>
+                <option value="developer">Organizational Admin</option>
               </select>
             </div>
           </div>
@@ -185,7 +185,7 @@ export default function AssignRoles() {
                   <div className="user-info">
                     <div className="user-name">{u.firstName || ''} {u.lastName || ''}</div>
                     <div className="user-email">{u.email || ''}</div>
-                    <div className="user-role">Role: <strong>{u.role || 'student'}</strong></div>
+                    <div className="user-role">Role: <strong>{formatRoleLabel(u.role || 'student')}</strong></div>
                   </div>
                   <button className="select-btn" type="button">Select</button>
                 </div>
@@ -218,7 +218,7 @@ export default function AssignRoles() {
                 <select id="newRole" value={newRole} onChange={(e) => setNewRole(e.target.value)}>
                   <option value="student">Student</option>
                   <option value="teacher">Teacher</option>
-                  <option value="developer">Developer</option>
+                  <option value="developer">Organizational Admin</option>
                 </select>
               </div>
 

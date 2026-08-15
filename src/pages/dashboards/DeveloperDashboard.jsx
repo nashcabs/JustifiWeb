@@ -29,7 +29,7 @@ export default function DeveloperDashboard() {
     }
   }, [loading, user, navigate]);
 
-  const devName = useMemo(() => getDisplayName(user) || 'Developer', [user]);
+  const devName = useMemo(() => getDisplayName(user) || 'Organizational Admin', [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -129,12 +129,12 @@ export default function DeveloperDashboard() {
 
       <main className="dashboard-shell">
         <section className="hero-card">
-          <p className="eyebrow">JUSTIFI DEVELOPER DASHBOARD</p>
+          <p className="eyebrow">JUSTIFI ORGANIZATIONAL ADMIN DASHBOARD</p>
           <h1>
             Hello, <span id="heroDevName">{devName}</span>
           </h1>
           <p className="hero-subtext">
-            Manage roles, organize accounts, and configure the developer-side controls of the JustiFi system.
+            Manage roles, organize accounts, and configure the organizational admin controls of the JustiFi system.
           </p>
         </section>
 
@@ -161,7 +161,7 @@ export default function DeveloperDashboard() {
           </div>
 
           <div className="stat-card">
-            <span className="stat-label">Developer Accounts</span>
+            <span className="stat-label">Organizational Admin Accounts</span>
             <strong className="stat-value" id="developerAccounts">{counts.developerAccounts}</strong>
           </div>
         </section>

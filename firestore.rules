@@ -218,6 +218,74 @@ service cloud.firestore {
       allow update: if isDeveloper() && isValidAnnouncementUpdate();
       allow delete: if isDeveloper();
     }
+    // ===============================================================
+// contactMessages
+// ===============================================================
+
+match /contactMessages/{messageId} {
+
+  // Public visitors may submit an inquiry.
+  allow create: if
+    request.resource.data.keys().hasOnly([
+      'name',
+      'email',
+      'subject',
+      'message',
+      'status',
+      'source',
+      'createdAt'
+    ])
+
+    && request.resource.data.name is string
+    && request.resource.data.email is string
+    && request.resource.data.subject is string
+    && request.resource.data.message is string
+
+    && request.resource.data.name.size() > 0
+    && request.resource.data.name.size() <= 120
+
+    && request.resource.data.email.size() > 0
+    && request.resource.data.email.size() <= 200
+
+    && request.resource.data.subject.size() > 0
+    && request.resource.data.subject.size() <= 200
+
+    && request.resource.data.message.size() > 0
+    && request.resource.data.message.size() <= 5000
+
+    && request.resource.data.status == 'unread'
+    && request.resource.data.source == 'landing-page'
+
+    && request.resource.data.createdAt is timestamp;
+
+
+  // Only developers can view inquiries.
+  allow read: if isDeveloper();
+
+
+  // Developers can only change inquiry status.
+  allow update: if isDeveloper()
+
+    && request.resource.data
+      .diff(resource.data)
+      .affectedKeys()
+      .hasOnly([
+        'status',
+        'updatedAt'
+      ])
+
+    && request.resource.data.status in [
+      'unread',
+      'read',
+      'resolved'
+    ]
+
+    && request.resource.data.updatedAt is timestamp;
+
+
+  // Keep inquiry history.
+  allow delete: if false;
+}
 
     // ===============================================================
     // users

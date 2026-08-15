@@ -314,13 +314,35 @@ function mapProfileDoc(id, profile = {}) {
   };
 }
 
+export function formatRoleLabel(role) {
+  const normalized = String(role || '').trim().toLowerCase();
+
+  if (normalized === 'developer') {
+    return 'Organizational Admin';
+  }
+
+  if (normalized === 'teacher') {
+    return 'Teacher';
+  }
+
+  if (normalized === 'nonstudent') {
+    return 'Non-Student';
+  }
+
+  if (normalized === 'student') {
+    return 'Student';
+  }
+
+  return 'Student';
+}
+
 export function getDisplayName(user) {
   if (!user) {
     return 'Login';
   }
 
   if (user.role === 'developer') {
-    return 'Developer';
+    return 'Organizational Admin';
   }
 
   const name = [
