@@ -1,22 +1,12 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { logout } from '../services/justifiFirebase.js';
+import LogoutButton from './LogoutButton.jsx';
 
 export default function TeacherAdminNav() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const path = location.pathname;
-
-  async function handleLogout() {
-    try {
-      await logout();
-    } catch {
-      // ignore logout failures and continue to login
-    }
-
-    navigate('/login', { replace: true });
-  }
 
   // Check which page is currently open
   const isDashboard = path === '/dashboard/teacher';
@@ -78,13 +68,7 @@ export default function TeacherAdminNav() {
         Manage Student
       </button>
 
-      <button
-        type="button"
-        className="mdps-admin-logout"
-        onClick={handleLogout}
-      >
-        Logout
-      </button>
+      <LogoutButton className="mdps-admin-logout" />
     </nav>
   );
 }

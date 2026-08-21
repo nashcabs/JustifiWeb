@@ -32,6 +32,14 @@ import { auth, db } from './firebaseClient.js';
 const DEFAULT_SCHOOL_ID = 'mdps';
 const DEFAULT_SCHOOL_NAME = 'Mother of Divine Providence School';
 
+export const STANDARD_SECTIONS = [
+  'Grade 11 - Section A',
+  'Grade 11 - Section B',
+  'Grade 12 - Section A',
+  'Grade 12 - Section B',
+  'No Section'
+];
+
 const ALLOWED_SELF_REGISTRATION_ROLES = new Set([
   'student',
   'nonStudent'
@@ -59,6 +67,10 @@ function normalizeRole(value, fallback = 'student') {
   }
 
   if (role === 'developer') {
+    return 'developer';
+  }
+
+  if (role.toLowerCase() === 'admin') {
     return 'developer';
   }
 
@@ -91,6 +103,14 @@ function normalizeProfileImage(profile) {
     cloudUrl,
     avatarDataUrl: cloudUrl || localPath || ''
   };
+}
+
+function normalizeAssignedSections(profile = {}) {
+  if (Array.isArray(profile.assignedSections) && profile.assignedSections.length) {
+    return profile.assignedSections;
+  }
+
+  return profile.assignedSection ? [profile.assignedSection] : [];
 }
 
 function logFirebaseError(stage, error) {
@@ -179,10 +199,9 @@ async function mapUser(firebaseUser) {
         ? profile.assignedGradeLevels
         : [],
 
-    assignedSections:
-      Array.isArray(profile.assignedSections)
-        ? profile.assignedSections
-        : [],
+    assignedSections: normalizeAssignedSections(profile),
+
+    isActive: profile.isActive !== false && profile.accountStatus !== 'inactive',
 
     accountStatus:
       profile.accountStatus || 'active',
@@ -274,10 +293,9 @@ function mapProfileDoc(id, profile = {}) {
         ? profile.assignedGradeLevels
         : [],
 
-    assignedSections:
-      Array.isArray(profile.assignedSections)
-        ? profile.assignedSections
-        : [],
+    assignedSections: normalizeAssignedSections(profile),
+
+    isActive: profile.isActive !== false && profile.accountStatus !== 'inactive',
 
     accountStatus:
       profile.accountStatus || 'active',
@@ -374,8 +392,7 @@ export function getDashboardPath(user) {
     return '/dashboard/developer';
   }
 
-  // Students and non-students currently use the student dashboard.
-  return '/dashboard/student';
+  return '/login';
 }
 
 export function onAuthStateChanged(callback) {
@@ -501,6 +518,8 @@ async function createUserProfileIfMissing(
     assignedSection: '',
     assignedGradeLevels: [],
     assignedSections: [],
+
+    isActive: true,
 
     accountStatus: 'active',
     profileCompleted: false,
@@ -639,7 +658,13 @@ export async function login(
     }
   );
 
-  return mapUser(credential.user);
+  const user = await mapUser(credential.user);
+  if (user && !user.isActive) {
+    await signOut(auth);
+    throw new Error('This account is inactive. Please contact an organizational administrator.');
+  }
+
+  return user;
 }
 
 export async function logout() {
@@ -829,37 +854,21 @@ export async function getStudents(viewer = null, options = {}) {
     );
   }
 
-  if (viewerRole === 'teacher') {
-    const assignedGradeLevel =
-      String(
-        viewer?.assignedGradeLevel || ''
-      ).trim();
+  const teacherSections = viewerRole === 'teacher'
+    ? new Set([
+        ...(Array.isArray(viewer?.assignedSections) ? viewer.assignedSections : []),
+        ...(viewer?.assignedSection ? [viewer.assignedSection] : [])
+      ])
+    : null;
 
-    const assignedSection =
-      String(
-        viewer?.assignedSection || ''
-      ).trim();
+  const filterTeacherRoster = (rows) => {
+    if (viewerRole !== 'teacher') return rows;
 
-    if (assignedGradeLevel) {
-      queryParts.push(
-        where(
-          'gradeLevel',
-          '==',
-          assignedGradeLevel
-        )
-      );
-    }
-
-    if (assignedSection) {
-      queryParts.push(
-        where(
-          'section',
-          '==',
-          assignedSection
-        )
-      );
-    }
-  }
+    return rows.filter((student) => {
+      const section = String(student.section || '').trim();
+      return !section || section === 'No Section' || teacherSections.has(section);
+    });
+  };
 
   const pageSizeValue =
     typeof options?.pageSize !== 'undefined'
@@ -889,6 +898,8 @@ export async function getStudents(viewer = null, options = {}) {
           )
       );
 
+      results = filterTeacherRoster(results);
+
       // If teacher has school filter and got 0 results, try without schoolId filter
       // to check if students exist but lack schoolId field
       if (
@@ -898,39 +909,7 @@ export async function getStudents(viewer = null, options = {}) {
       ) {
         console.log('[JustiFi] No students found with schoolId filter, trying without school filter...');
         
-        const fallbackQueryParts = [
-          where('role', '==', 'student')
-        ];
-
-        const assignedGradeLevel =
-          String(
-            viewer?.assignedGradeLevel || ''
-          ).trim();
-
-        const assignedSection =
-          String(
-            viewer?.assignedSection || ''
-          ).trim();
-
-        if (assignedGradeLevel) {
-          fallbackQueryParts.push(
-            where(
-              'gradeLevel',
-              '==',
-              assignedGradeLevel
-            )
-          );
-        }
-
-        if (assignedSection) {
-          fallbackQueryParts.push(
-            where(
-              'section',
-              '==',
-              assignedSection
-            )
-          );
-        }
+        const fallbackQueryParts = [where('role', '==', 'student')];
 
         const fallbackSnapshot = await getDocs(
           query(
@@ -939,13 +918,13 @@ export async function getStudents(viewer = null, options = {}) {
           )
         );
 
-        const fallbackResults = fallbackSnapshot.docs.map(
+        const fallbackResults = filterTeacherRoster(fallbackSnapshot.docs.map(
           (documentSnapshot) =>
             mapProfileDoc(
               documentSnapshot.id,
               documentSnapshot.data()
             )
-        );
+        ));
 
         if (fallbackResults.length > 0) {
           console.log('[JustiFi] WARNING: Found', fallbackResults.length, 'students WITHOUT schoolId field. These need to be updated to have schoolId:', viewerSchoolId);
@@ -967,6 +946,21 @@ export async function getStudents(viewer = null, options = {}) {
       ...queryParts
     ];
 
+    if (viewerRole === 'teacher') {
+      const snapshot = await getDocs(query(...queryArgs));
+      const items = filterTeacherRoster(snapshot.docs.map((documentSnapshot) =>
+        mapProfileDoc(documentSnapshot.id, documentSnapshot.data())
+      ));
+
+      return {
+        success: true,
+        items,
+        pageSize: items.length,
+        hasMore: false,
+        nextCursor: null
+      };
+    }
+
     if (cursor) {
       queryArgs.push(startAfter(cursor));
     }
@@ -975,14 +969,14 @@ export async function getStudents(viewer = null, options = {}) {
 
     const snapshot = await getDocs(query(...queryArgs));
 
-    const items = snapshot.docs
+    const items = filterTeacherRoster(snapshot.docs
       .slice(0, pageSize)
       .map((documentSnapshot) =>
         mapProfileDoc(
           documentSnapshot.id,
           documentSnapshot.data()
         )
-      );
+      ));
 
     const hasMore = snapshot.docs.length > pageSize;
     const nextCursor =
@@ -1030,7 +1024,8 @@ export async function updateUserRoleByEmail(
   email,
   newRole,
   assignedGradeLevel = '',
-  assignedSection = ''
+  assignedSection = '',
+  assignedSections = []
 ) {
   const normalizedEmail =
     String(email || '')
@@ -1089,6 +1084,10 @@ export async function updateUserRoleByEmail(
         assignedSection || ''
       ).trim();
 
+    patch.assignedSections = Array.isArray(assignedSections) && assignedSections.length
+      ? assignedSections
+      : (patch.assignedSection ? [patch.assignedSection] : []);
+
     // Ensure teachers have a schoolId if one is not already set
     if (!documentSnapshot.data()?.schoolId) {
       patch.schoolId = DEFAULT_SCHOOL_ID;
@@ -1097,6 +1096,7 @@ export async function updateUserRoleByEmail(
   } else {
     patch.assignedGradeLevel = '';
     patch.assignedSection = '';
+    patch.assignedSections = [];
   }
 
   await updateDoc(

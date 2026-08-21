@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { getDisplayName, logout, updateCurrentUserProfile } from '../../services/justifiFirebase.js';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { storage } from '../../services/firebaseClient.js';
+import { getFirebaseStorage } from '../../services/firebaseClient.js';
 import TeacherAdminNav from '../../components/TeacherAdminNav.jsx';
+import LogoutButton from '../../components/LogoutButton.jsx';
 
 
 const DEFAULT_AVATAR = '/assets/Profile/default-avatar.webp';
@@ -20,14 +20,58 @@ function formatValue(value) {
   }
 }
 
-function fileToDataUrl(file) {
+async function optimizeProfileImage(file) {
+  const bitmap = await createImageBitmap(file);
+
+  const MAX_SIZE = 512;
+
+  let width = bitmap.width;
+  let height = bitmap.height;
+
+  if (width > height && width > MAX_SIZE) {
+    height = Math.round((height * MAX_SIZE) / width);
+    width = MAX_SIZE;
+  } else if (height > MAX_SIZE) {
+    width = Math.round((width * MAX_SIZE) / height);
+    height = MAX_SIZE;
+  }
+
+  const canvas = document.createElement('canvas');
+
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext('2d');
+
+  context.drawImage(
+    bitmap,
+    0,
+    0,
+    width,
+    height
+  );
+
+  bitmap.close();
+
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error || new Error('Failed to read image file.'));
-    reader.readAsDataURL(file);
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(
+            new Error(
+              'Failed to optimize profile image.'
+            )
+          );
+          return;
+        }
+
+        resolve(blob);
+      },
+      'image/webp',
+      0.78
+    );
   });
-}
+} 
 
 export default function TeacherProfile() {
   const navigate = useNavigate();
@@ -56,7 +100,7 @@ export default function TeacherProfile() {
     }
 
     if ((user.role || 'student') !== 'teacher') {
-      navigate('/dashboard/student', { replace: true });
+      navigate('/login', { replace: true });
       return;
     }
 
@@ -150,6 +194,7 @@ export default function TeacherProfile() {
   }
 
 async function onProfileImageChange(e) {
+  
   const file = e.target.files && e.target.files[0];
   if (!file || !user) return;
 
@@ -165,11 +210,27 @@ if (file.size > 10 * 1024 * 1024) {
   return;
 }
 
-  try {
-    const fileExt = file.name.split('.').pop();
-    const imageRef = ref(storage, `profileImages/${user.uid}/profile.${fileExt}`);
 
-    await uploadBytes(imageRef, file);
+  try {
+    const [{ getDownloadURL, ref, uploadBytes }, storage] = await Promise.all([
+      import('firebase/storage'),
+      getFirebaseStorage()
+    ]);
+    const optimizedImage =
+  await optimizeProfileImage(file);
+
+const imageRef = ref(
+  storage,
+  `profileImages/${user.uid}/profile.webp`
+);
+
+await uploadBytes(
+  imageRef,
+  optimizedImage,
+  {
+    contentType: 'image/webp'
+  }
+);
 
     const downloadUrl = await getDownloadURL(imageRef);
 
@@ -203,8 +264,10 @@ if (file.size > 10 * 1024 * 1024) {
         >
           <span className="mdps-brand-logo-wrap">
             <img
-              src="/assets/Background/mdps.svg"
+              src="/assets/optimized/mdps-svg.webp"
               alt="Mother of Divine Providence School logo"
+              width="48"
+              height="48"
             />
           </span>
 
@@ -278,13 +341,7 @@ if (file.size > 10 * 1024 * 1024) {
             Manage Students
           </button>
 
-          <button
-            className="menu-link logout-btn"
-            type="button"
-            onClick={onLogout}
-          >
-            Logout
-          </button>
+          <LogoutButton className="menu-link logout-btn" />
         </div>
       </aside>
 
@@ -292,11 +349,16 @@ if (file.size > 10 * 1024 * 1024) {
         <section className="mdps-admin-hero mdps-profile-hero">
           <div className="mdps-profile-hero-content">
             <div className="mdps-profile-photo-wrap">
-              <img
-                className="mdps-profile-photo"
-                src={profileImageSrc}
-                alt={`${displayName} profile`}
-              />
+            <img
+              className="mdps-profile-photo"
+              src={profileImageSrc}
+              alt={`${displayName} profile`}
+              width="112"
+              height="112"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+            />
 
               <label
                 htmlFor="profileImageInput"

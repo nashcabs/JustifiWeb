@@ -21,7 +21,7 @@ export default function TeamPage() {
 
           <div className="team-grid">
             <figure className="team-card">
-              <img src="/assets/Team/nash.png" alt="CABIA, Nash Daniel S." />
+              <img src="/assets/Team/nash.png" alt="CABIA, Nash Daniel S." width="640" height="640" />
               <figcaption className="team-overlay">
                 <h3>CABIA</h3>
                 <div>Nash Daniel S.</div>
@@ -30,7 +30,7 @@ export default function TeamPage() {
             </figure>
 
             <figure className="team-card">
-              <img src="/assets/Team/zel.png" alt="DE GUZMAN, Grazelle P." />
+              <img src="/assets/Team/zel.png" alt="DE GUZMAN, Grazelle P." width="640" height="640" />
               <figcaption className="team-overlay">
                 <h3>DE GUZMAN</h3>
                 <div>Grazelle P.</div>
@@ -39,7 +39,7 @@ export default function TeamPage() {
             </figure>
 
             <figure className="team-card">
-              <img src="/assets/Team/maru.png" alt="ESTABILLO, Yuan Maru A." />
+              <img src="/assets/Team/maru.png" alt="ESTABILLO, Yuan Maru A." width="640" height="640" />
               <figcaption className="team-overlay">
                 <h3>ESTABILLO</h3>
                 <div>Yuan Maru A.</div>
@@ -48,7 +48,7 @@ export default function TeamPage() {
             </figure>
 
             <figure className="team-card">
-              <img src="/assets/Team/jehu.png" alt="GIPAYA, Jehu S." />
+              <img src="/assets/Team/jehu.png" alt="GIPAYA, Jehu S." width="640" height="640" />
               <figcaption className="team-overlay">
                 <h3>GIPAYA</h3>
                 <div>Jehu S.</div>
@@ -57,7 +57,7 @@ export default function TeamPage() {
             </figure>
 
             <figure className="team-card">
-              <img src="/assets/Team/kobe.jpg" alt="HUFANCIA, Kobe Jan Dave M." />
+              <img src="/assets/Team/kobe.jpg" alt="HUFANCIA, Kobe Jan Dave M." width="640" height="640" />
               <figcaption className="team-overlay">
                 <h3>HUFANCIA</h3>
                 <div>Kobe Jan Dave M.</div>
@@ -66,7 +66,7 @@ export default function TeamPage() {
             </figure>
 
             <figure className="team-card">
-              <img src="/assets/Team/q.png" alt="SALVADOR, Qjuin Dominic" />
+              <img src="/assets/Team/q.png" alt="SALVADOR, Qjuin Dominic" width="640" height="640" />
               <figcaption className="team-overlay">
                 <h3>SALVADOR</h3>
                 <div>Qjuin Dominic</div>

@@ -64,17 +64,18 @@ const TEAM_MEMBERS = [
     photo: '/assets/Team/jehu.png',
   },
   {
-    name: 'Hufancia, Kobe Jan Dave M.',
-    role: 'System Designer',
-    initials: 'JG',
-    photo: '/assets/Team/kobe.jpg',
-  },
-  {
     name: 'Salvador, Qjuin Dominic',
     role: 'System Analyst / Game Developer',
     initials: 'QS',
     photo: '/assets/Team/q.png',
   },
+  {
+    name: 'Hufancia, Kobe Jan Dave M.',
+    role: 'System Designer',
+    initials: 'JG',
+    photo: '/assets/Team/kobe.jpg',
+  },
+  
   
 ];
 
@@ -86,15 +87,15 @@ const SUPPORT_PARTNER_ASSETS = {
 };
 
 const CHARACTER_CARDS = [
-  { src: '/assets/Index/Justice.svg', alt: 'Justice character card' },
-  { src: '/assets/Index/Lawson.svg', alt: 'Lawson character card' },
-  { src: '/assets/Index/alfonso.svg', alt: 'Alfonso character card' },
-  { src: '/assets/Index/Alex.svg', alt: 'Alex character card' },
-  { src: '/assets/Index/Cora.svg', alt: 'Cora character card' },
-  { src: '/assets/Index/Cynthia.svg', alt: 'Cynthia character card' },
-  { src: '/assets/Index/Guzman.svg', alt: 'Guzman character card' },
-  { src: '/assets/Index/Ian.svg', alt: 'Ian character card' },
-  { src: '/assets/Index/Riri.svg', alt: 'Riri character card' },
+  { src: '/assets/optimized/Justice-svg.webp', alt: 'Justice character card' },
+  { src: '/assets/optimized/Lawson-svg.webp', alt: 'Lawson character card' },
+  { src: '/assets/optimized/alfonso-svg.webp', alt: 'Alfonso character card' },
+  { src: '/assets/optimized/Alex-svg.webp', alt: 'Alex character card' },
+  { src: '/assets/optimized/Cora-svg.webp', alt: 'Cora character card' },
+  { src: '/assets/optimized/Cynthia-svg.webp', alt: 'Cynthia character card' },
+  { src: '/assets/optimized/Guzman-svg.webp', alt: 'Guzman character card' },
+  { src: '/assets/optimized/Ian-svg.webp', alt: 'Ian character card' },
+  { src: '/assets/optimized/Riri-svg.webp', alt: 'Riri character card' },
 ];
 
 
@@ -230,8 +231,8 @@ async function handleContactSubmit(event) {
           aria-label="Open navigation"
           aria-expanded="true"
           aria-controls="desktop-navigation-links"
-        >
-          <img src="/assets/Icons/Coin3.png" alt="" aria-hidden="true" />
+        > 
+          <img src="/assets/Icons/Coin3.png" alt="" aria-hidden="true" width="50" height="50" />
         </button>
 
         <ul className="nav-links" id="desktop-navigation-links">
@@ -273,6 +274,8 @@ async function handleContactSubmit(event) {
             src="/assets/Icons/Coin3.png"
             alt=""
             aria-hidden="true"
+            width="50"
+            height="50"
           />
           <span>JustiFi</span>
         </a>
@@ -337,19 +340,19 @@ async function handleContactSubmit(event) {
 
       <div className="floating-nav">
         <a href="#home" aria-label="Home">
-          <img src="/assets/Icons/home.png" alt="" aria-hidden="true" />
+          <img src="/assets/Icons/home.png" alt="" aria-hidden="true" width="32" height="32" />
           <span className="visually-hidden">HOME</span>
         </a>
         <a href="#about" aria-label="Game information">
-          <img src="/assets/Icons/info.png" alt="" aria-hidden="true" />
+          <img src="/assets/Icons/info.png" alt="" aria-hidden="true" width="32" height="32" />
           <span className="visually-hidden">GAME INFO</span>
         </a>
         <a href="#characters" aria-label="Characters">
-          <img src="/assets/Icons/reading.png" alt="" aria-hidden="true" />
+          <img src="/assets/Icons/reading.png" alt="" aria-hidden="true" width="32" height="32" />
           <span className="visually-hidden">CHARACTERS</span>
         </a>
         <a id="floating-auth" href={navHref} aria-label={floatingAria}>
-          <img src="/assets/Icons/user.png" alt="" aria-hidden="true" />
+          <img src="/assets/Icons/user.png" alt="" aria-hidden="true" width="32" height="32" />
           <span className="visually-hidden floating-auth-label">
             {floatingLabel}
           </span>
@@ -387,9 +390,9 @@ async function handleContactSubmit(event) {
 
           <div className="Coin">
             <div className="coin-anim" aria-hidden="true">
-              <img src="/assets/Parallax/Coin3.png" className="coin-frame coin-frame--3" alt="" />
-              <img src="/assets/Parallax/Coin1.png" className="coin-frame coin-frame--1" alt="" />
-              <img src="/assets/Parallax/Coin2.png" className="coin-frame coin-frame--2" alt="" />
+              <img src="/assets/optimized/Coin3-png.webp" className="coin-frame coin-frame--3" alt="" width="240" height="240" />
+              <img src="/assets/optimized/Coin1-png.webp" className="coin-frame coin-frame--1" alt="" width="240" height="240" />
+              <img src="/assets/optimized/Coin2-png.webp" className="coin-frame coin-frame--2" alt="" width="240" height="240" />
             </div>
           </div>
         </div>
@@ -450,12 +453,7 @@ async function handleContactSubmit(event) {
             <h2 className="about-page-title">OUR LEARNING MODULES</h2>
 
             <div className="modules-stage">
-              <img
-                className="module-character module-character-left"
-                src="/assets/Characters/module-girl.png"
-                alt="Student presenting the learning modules"
-                onError={hideBrokenImage}
-              />
+              
 
               <div className="modules-list">
                 {LEARNING_MODULES.map((module) => (
@@ -475,6 +473,8 @@ async function handleContactSubmit(event) {
                 className="module-character module-character-right"
                 src="/assets/Characters/module-boy.png"
                 alt="Student presenting the learning modules"
+                width="420"
+                height="520"
                 onError={hideBrokenImage}
               />
             </div>
@@ -491,7 +491,7 @@ async function handleContactSubmit(event) {
 
           <div className="about-page-content team-showcase-content">
             <h2 className="about-page-title">MEET THE TEAM</h2>
-            <img src="/assets/Title/Javachip-Logo.svg" alt="JAVACHIP.EXE" className="team-brand" />
+            <img src="/assets/Title/Javachip-Logo.svg" alt="JAVACHIP.EXE" className="team-brand" width="360" height="100" />
 
             <div className="team-showcase-grid">
               {TEAM_MEMBERS.map((member) => (
@@ -503,6 +503,10 @@ async function handleContactSubmit(event) {
                     <img
                       src={member.photo}
                       alt={member.name}
+                      loading="lazy"
+                      decoding="async"
+                      width="240"
+                      height="240"
                       onError={hideBrokenImage}
                     />
                   </div>
@@ -540,6 +544,10 @@ async function handleContactSubmit(event) {
                       <img
                         src={character.src}
                         alt={index === 0 ? character.alt : ''}
+                        loading="lazy"
+                        decoding="async"
+                        width="720"
+                        height="960"
                       />
                     </div>
                   ))}
@@ -582,6 +590,10 @@ async function handleContactSubmit(event) {
                 <img
                   src="/assets/Background/makabata.png"
                   alt="MAKABATA Helpline 1383"
+                  loading="lazy"
+                  decoding="async"
+                  width="360"
+                  height="160"
                   onError={hideBrokenImage}
                 />
               </div>
@@ -614,6 +626,10 @@ async function handleContactSubmit(event) {
                     <img
                       src={SUPPORT_PARTNER_ASSETS.ncmhLogo}
                       alt="National Center for Mental Health"
+                      loading="lazy"
+                  decoding="async"
+                      width="180"
+                      height="180"
                       onError={hideBrokenImage}
                     />
                   </div>
@@ -659,6 +675,10 @@ async function handleContactSubmit(event) {
                     <img
                       src={SUPPORT_PARTNER_ASSETS.pnpLogo}
                       alt="PNP Anti-Cybercrime Group"
+                      loading="lazy"
+                  decoding="async"
+                      width="180"
+                      height="180"
                       onError={hideBrokenImage}
                     />
                   </div>
@@ -739,6 +759,10 @@ async function handleContactSubmit(event) {
                   className="partners-collaboration-photo"
                   src={SUPPORT_PARTNER_ASSETS.partnerPhoto}
                   alt="JustiFi collaboration with Mother of Divine Providence School"
+                  loading="lazy"
+                  decoding="async"
+                  width="1200"
+                  height="800"
                   onError={hideBrokenImage}
                 />
 
@@ -748,6 +772,10 @@ async function handleContactSubmit(event) {
                       src={SUPPORT_PARTNER_ASSETS.partnerLogo}
                       alt=""
                       aria-hidden="true"
+                      loading="lazy"
+                      decoding="async"
+                      width="180"
+                      height="180"
                       onError={hideBrokenImage}
                     />
                   </span>

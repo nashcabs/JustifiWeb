@@ -1,40 +1,31 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import RequireRole from './components/RequireRole.jsx';
-import LandingPage from './pages/LandingPage.jsx';
-import LoginPage from './pages/LoginPage.jsx';
-import TeamPage from './pages/TeamPage.jsx';
-import StudentDashboard from './pages/dashboards/StudentDashboard.jsx';
-import TeacherDashboard from './pages/dashboards/TeacherDashboard.jsx';
-import DeveloperDashboard from './pages/dashboards/DeveloperDashboard.jsx';
-import StudentProfile from './pages/student/StudentProfile.jsx';
-import StudentBadges from './pages/student/StudentBadges.jsx';
-import TeacherProfile from './pages/teacher/TeacherProfile.jsx';
-import TeacherStudents from './pages/teacher/TeacherStudents.jsx';
-import TeacherManageStudents from './pages/teacher/TeacherManageStudents.jsx';
-import TeacherStudentView from './pages/teacher/TeacherStudentView.jsx';
-import AssignRoles from './pages/developer/AssignRoles.jsx';
-import ManageAccounts from './pages/developer/ManageAccounts.jsx';
-import SystemSettings from './pages/developer/SystemSettings.jsx';
-import StudentQuiz from "./pages/student/StudentQuiz";
-import DeveloperInquiries from './pages/developer/DeveloperInquiries.jsx';
+
+const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
+const TeamPage = lazy(() => import('./pages/TeamPage.jsx'));
+const TeacherDashboard = lazy(() => import('./pages/dashboards/TeacherDashboard.jsx'));
+const DeveloperDashboard = lazy(() => import('./pages/dashboards/DeveloperDashboard.jsx'));
+const TeacherProfile = lazy(() => import('./pages/teacher/TeacherProfile.jsx'));
+const TeacherStudents = lazy(() => import('./pages/teacher/TeacherStudents.jsx'));
+const TeacherManageStudents = lazy(() => import('./pages/teacher/TeacherManageStudents.jsx'));
+const TeacherStudentView = lazy(() => import('./pages/teacher/TeacherStudentView.jsx'));
+const AssignRoles = lazy(() => import('./pages/developer/AssignRoles.jsx'));
+const ManageAccounts = lazy(() => import('./pages/developer/ManageAccounts.jsx'));
+const SystemSettings = lazy(() => import('./pages/developer/SystemSettings.jsx'));
+const DeveloperInquiries = lazy(() => import('./pages/developer/DeveloperInquiries.jsx'));
 
 export default function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <Routes>
+      <Suspense fallback={<div className="route-loading" role="status">Loading...</div>}>
+        <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/team" element={<TeamPage />} />
 
-        <Route
-          path="/dashboard/student"
-          element={
-            <RequireRole role="student">
-              <StudentDashboard />
-            </RequireRole>
-          }
-        />
+        
         <Route
           path="/dashboard/teacher"
           element={
@@ -48,23 +39,6 @@ export default function App() {
           element={
             <RequireRole role="developer">
               <DeveloperDashboard />
-            </RequireRole>
-          }
-        />
-
-        <Route
-          path="/student/profile"
-          element={
-            <RequireRole role="student">
-              <StudentProfile />
-            </RequireRole>
-          }
-        />
-        <Route
-          path="/student/badges"
-          element={
-            <RequireRole role="student">
-              <StudentBadges />
             </RequireRole>
           }
         />
@@ -134,11 +108,8 @@ export default function App() {
     </RequireRole>
   }
 />
-        <Route
-  path="/student/quizzes"
-  element={<StudentQuiz />}
-/>
-      </Routes>
-    </BrowserRouter>
-  );
-}
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    );
+  }

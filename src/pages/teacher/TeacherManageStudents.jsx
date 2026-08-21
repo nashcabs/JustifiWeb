@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { getStudents, updateUserProfileById } from '../../services/justifiFirebase.js';
+import {
+  getStudents,
+  STANDARD_SECTIONS,
+  updateUserProfileById
+} from '../../services/justifiFirebase.js';
 import TeacherAdminNav from '../../components/TeacherAdminNav.jsx';
 
 
@@ -25,6 +29,19 @@ export default function TeacherManageStudents() {
   const [floatingMessage, setFloatingMessage] = useState('');
   const [floatingType, setFloatingType] = useState('success');
 
+  const teacherSections = useMemo(() => {
+    const assigned = Array.isArray(user?.assignedSections)
+      ? user.assignedSections
+      : user?.assignedSection
+        ? [user.assignedSection]
+        : [];
+
+    return [
+      ...assigned.filter((section) => STANDARD_SECTIONS.includes(section) && section !== 'No Section'),
+      'No Section'
+    ];
+  }, [user]);
+
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -32,7 +49,7 @@ export default function TeacherManageStudents() {
       return;
     }
     if ((user.role || 'student') !== 'teacher') {
-      navigate('/dashboard/student', { replace: true });
+      navigate('/login', { replace: true });
     }
   }, [loading, user, navigate]);
 
@@ -90,10 +107,14 @@ export default function TeacherManageStudents() {
   }, [allStudents, search, gradeFilter]);
 
   function openEditModal(student) {
+    const legacySection = student.section && student.section.startsWith('Section ')
+      ? `${student.gradeLevel || 'Grade 11'} - ${student.section}`
+      : student.section;
+
     setSelectedStudent(student);
     setEdit({
       gradeLevel: student.gradeLevel || 'Grade 11',
-      section: student.section || ''
+      section: teacherSections.includes(legacySection) ? legacySection : 'No Section'
     });
     setModalOpen(true);
   }
@@ -112,10 +133,17 @@ export default function TeacherManageStudents() {
 
     setSaving(true);
     try {
+      const isNoSection = edit.section === 'No Section';
       const updates = {
-        gradeLevel: String(edit.gradeLevel || ''),
-        section: String(edit.section || '').trim()
+        gradeLevel: isNoSection
+          ? String(edit.gradeLevel || '')
+          : edit.section.split(' - ')[0],
+        section: String(edit.section || 'No Section').trim()
       };
+
+      if (!teacherSections.includes(updates.section)) {
+        throw new Error('You can only assign students to your assigned grade-section pairs.');
+      }
 
       await updateUserProfileById(selectedStudent.id, updates);
 
@@ -145,6 +173,8 @@ export default function TeacherManageStudents() {
             <img
               src="/assets/Background/mdps.svg"
               alt="Mother of Divine Providence School logo"
+              width="160"
+              height="160"
             />
           </span>
 
@@ -174,6 +204,8 @@ export default function TeacherManageStudents() {
               src="/assets/Background/mdps.svg"
               alt=""
               aria-hidden="true"
+              width="220"
+              height="220"
             />
           </div>
 
@@ -187,23 +219,6 @@ export default function TeacherManageStudents() {
               and update grade level and section assignments.
             </p>
 
-            <div className="mdps-hero-actions">
-              <button
-                className="mdps-btn mdps-btn-light"
-                type="button"
-                onClick={() => navigate('/dashboard/teacher')}
-              >
-                Back to Dashboard
-              </button>
-
-              <button
-                className="mdps-btn mdps-btn-outline"
-                type="button"
-                onClick={load}
-              >
-                Refresh Students
-              </button>
-            </div>
           </div>
         </section>
 
@@ -419,19 +434,25 @@ export default function TeacherManageStudents() {
               </div>
 
               <div className="mdps-field">
-                <label htmlFor="editSection">Section</label>
-                <input
+                <label htmlFor="editSection">Grade and section assignment</label>
+                <select
                   id="editSection"
-                  type="text"
-                  placeholder="Example: Section A"
                   value={edit.section}
+                  disabled={!teacherSections.length}
                   onChange={(e) =>
                     setEdit((state) => ({
                       ...state,
-                      section: e.target.value
+                      section: e.target.value,
+                      gradeLevel: e.target.value === 'No Section'
+                        ? state.gradeLevel
+                        : e.target.value.split(' - ')[0]
                     }))
                   }
-                />
+                >
+                  {teacherSections.map((section) => (
+                    <option key={section} value={section}>{section}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="mdps-field mdps-field-full">

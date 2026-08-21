@@ -110,7 +110,7 @@ export default function TeacherStudentView() {
     }
 
     if ((user.role || 'student') !== 'teacher') {
-      navigate('/dashboard/student', { replace: true });
+      navigate('/login', { replace: true });
     }
   }, [loading, user, navigate]);
 
@@ -377,6 +377,8 @@ const badgeCount = badges.length;
             <img
               src="/assets/Background/mdps.svg"
               alt="Mother of Divine Providence School logo"
+              width="160"
+              height="160"
             />
           </span>
 
@@ -426,23 +428,6 @@ const badgeCount = badges.length;
               <span>{overview.email}</span>
             </div>
 
-            <div className="mdps-hero-actions">
-              <button
-                className="mdps-btn mdps-btn-light"
-                type="button"
-                onClick={() => navigate('/teacher/students')}
-              >
-                Back to Student List
-              </button>
-
-              <button
-                className="mdps-btn mdps-btn-outline"
-                type="button"
-                onClick={() => navigate('/teacher/manage-students')}
-              >
-                Manage Student
-              </button>
-            </div>
           </div>
         </section>
 
@@ -526,6 +511,8 @@ const badgeCount = badges.length;
                 src={badge.image}
                 alt=""
                 aria-hidden="true"
+                width="120"
+                height="120"
               />
 
               {!earned && (

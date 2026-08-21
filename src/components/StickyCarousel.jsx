@@ -105,7 +105,7 @@ export default function StickyCarousel() {
         onClick={() => goTo(-1)}
         style={{ display: total > 1 ? undefined : 'none' }}
       >
-        <img src="/assets/Icons/right.svg" alt="" aria-hidden="true" />
+        <img src="/assets/Icons/right.svg" alt="" aria-hidden="true" width="32" height="32" />
       </button>
       )}
 
@@ -146,7 +146,7 @@ export default function StickyCarousel() {
           onClick={() => goTo(1)}
           style={{ display: total > 1 ? undefined : 'none' }}
         >
-          <img src="/assets/Icons/right.svg" alt="" aria-hidden="true" />
+          <img src="/assets/Icons/right.svg" alt="" aria-hidden="true" width="32" height="32" />
         </button>
       )}
     </div>

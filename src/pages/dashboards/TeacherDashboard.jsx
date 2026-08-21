@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Chart from 'chart.js/auto';
-import * as XLSX from 'xlsx';
 
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { getDisplayName, getStudents, logout } from '../../services/justifiFirebase.js';
+import { getDisplayName, getStudents, STANDARD_SECTIONS } from '../../services/justifiFirebase.js';
 import TeacherAdminNav from '../../components/TeacherAdminNav.jsx';
+import LogoutButton from '../../components/LogoutButton.jsx';
 
 
 function hasAnyProgress(progress) {
@@ -89,11 +89,21 @@ export default function TeacherDashboard() {
       return;
     }
     if ((user.role || 'student') !== 'teacher') {
-      navigate('/dashboard/student', { replace: true });
+      navigate('/login', { replace: true });
     }
   }, [loading, user, navigate]);
 
   const adminName = useMemo(() => getDisplayName(user) || 'Admin', [user]);
+
+  const assignedSections = useMemo(() => {
+    const sections = Array.isArray(user?.assignedSections)
+      ? user.assignedSections
+      : user?.assignedSection
+        ? [user.assignedSection]
+        : [];
+
+    return sections.filter((section) => STANDARD_SECTIONS.includes(section) && section !== 'No Section');
+  }, [user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -145,26 +155,16 @@ export default function TeacherDashboard() {
       chartRef.current = null;
     }
 
+    const labels = assignedSections.length ? assignedSections : ['No sections assigned'];
+
     chartRef.current = new Chart(canvas, {
       type: 'bar',
       data: {
-        labels: [
-          'Total Students',
-          'Active Students',
-          'Completed Profiles',
-          'Students with Progress',
-          'Average Quiz Score'
-        ],
+        labels,
         datasets: [
           {
-            label: 'Admin Overview',
-            data: [
-              summary.totalStudents ?? 0,
-              summary.activeStudents ?? 0,
-              summary.completedProfiles ?? 0,
-              summary.studentsWithProgress ?? 0,
-              summary.averageQuizScore ?? 0
-            ],
+            label: 'Assigned section',
+            data: assignedSections.length ? assignedSections.map(() => 1) : [0],
             backgroundColor: [
               '#7f001f',
               '#98052c',
@@ -191,9 +191,7 @@ export default function TeacherDashboard() {
               label: function (context) {
                 const label = context.label || '';
                 const value = context.raw ?? 0;
-                return label === 'Average Quiz Score'
-                  ? `${label}: ${value}%`
-                  : `${label}: ${value}`;
+                return value ? `${label}: assigned` : `${label}: none`;
               }
             }
           }
@@ -226,7 +224,7 @@ export default function TeacherDashboard() {
         chartRef.current = null;
       }
     };
-  }, [summary]);
+  }, [assignedSections]);
 
   function showFloatingPanel(message, type = 'success') {
     setFloatingMessage(String(message || ''));
@@ -234,73 +232,155 @@ export default function TeacherDashboard() {
     window.setTimeout(() => setFloatingMessage(''), 3000);
   }
 
-  async function onLogout() {
-    try {
-      await logout();
-    } catch {
-      // ignore
-    }
-    navigate('/login', { replace: true });
-  }
+async function onPrintData() {
+  try {
+    const list = Array.isArray(students) ? students : [];
 
-  function onPrintData() {
-    try {
-      const list = Array.isArray(students) ? students : [];
-      if (!list.length) {
-        showFloatingPanel('No student data available to export.', 'error');
-        return;
+    if (!list.length) {
+      showFloatingPanel(
+        'No student data available to export.',
+        'error'
+      );
+      return;
+    }
+
+    // Load XLSX only when Export Data is clicked
+    const XLSX = await import('xlsx');
+
+    const summaryRows = [
+      {
+        Metric: 'Total Students',
+        Value: list.length
+      },
+      {
+        Metric: 'Active Students',
+        Value: list.filter(
+          (s) =>
+            String(
+              s.accountStatus || 'active'
+            ).toLowerCase() === 'active'
+        ).length
+      },
+      {
+        Metric: 'Completed Profiles',
+        Value: list.filter(
+          (s) => !!s.profileCompleted
+        ).length
+      },
+      {
+        Metric: 'Students with Progress',
+        Value: list.filter(
+          (s) => hasAnyProgress(s.progress)
+        ).length
+      },
+      {
+        Metric: 'Average Quiz Score',
+        Value:
+          `${Math.round(
+            computeAverageQuizScorePercent(list)
+          )}%`
       }
+    ];
 
-      const summaryRows = [
-        { Metric: 'Total Students', Value: list.length },
-        {
-          Metric: 'Active Students',
-          Value: list.filter((s) => String(s.accountStatus || 'active').toLowerCase() === 'active').length
-        },
-        { Metric: 'Completed Profiles', Value: list.filter((s) => !!s.profileCompleted).length },
-        { Metric: 'Students with Progress', Value: list.filter((s) => hasAnyProgress(s.progress)).length },
-        { Metric: 'Average Quiz Score', Value: `${Math.round(computeAverageQuizScorePercent(list))}%` }
-      ];
+    const studentRows = list.map((student) => {
+      const progressItems =
+        Array.isArray(student.progress)
+          ? student.progress
+          : [];
 
-      const studentRows = list.map((student) => {
-        const progressItems = Array.isArray(student.progress) ? student.progress : [];
-        const quizScores = Array.isArray(student.quizScores) ? student.quizScores : [];
-        const avg = quizScores.length
-          ? Math.round(
-              quizScores.reduce((sum, s) => sum + (normalizeQuizScorePercent(s) || 0), 0) / quizScores.length
-            )
-          : 0;
+      const quizScores =
+        Array.isArray(student.quizScores)
+          ? student.quizScores
+          : [];
 
-        return {
-          Name:
-            student.fullName ||
-            [student.firstName, student.lastName].filter(Boolean).join(' ').trim() ||
-            student.email ||
-            '',
-          Email: student.email || '',
-          Role: student.role || 'student',
-          GradeLevel: student.gradeLevel || '',
-          Section: student.section || '',
-          Status: student.accountStatus || 'active',
-          ProfileCompleted: student.profileCompleted ? 'Yes' : 'No',
-          CompletedLessons: progressItems.length,
-          BadgeCount: Array.isArray(student.badges) ? student.badges.length : 0,
-          QuizAverage: `${avg}%`
-        };
-      });
+      const avg = quizScores.length
+        ? Math.round(
+            quizScores.reduce(
+              (sum, score) =>
+                sum +
+                (
+                  normalizeQuizScorePercent(
+                    score
+                  ) || 0
+                ),
+              0
+            ) / quizScores.length
+          )
+        : 0;
 
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(summaryRows), 'Summary');
-      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(studentRows), 'Students');
+      return {
+        Name:
+          student.fullName ||
+          [
+            student.firstName,
+            student.lastName
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .trim() ||
+          student.email ||
+          '',
+        Email: student.email || '',
+        Role: student.role || 'student',
+        GradeLevel:
+          student.gradeLevel || '',
+        Section: student.section || '',
+        Status:
+          student.accountStatus || 'active',
+        ProfileCompleted:
+          student.profileCompleted
+            ? 'Yes'
+            : 'No',
+        CompletedLessons:
+          progressItems.length,
+        BadgeCount:
+          Array.isArray(student.badges)
+            ? student.badges.length
+            : 0,
+        QuizAverage: `${avg}%`
+      };
+    });
 
-      const fileName = `student-monitoring-${new Date().toISOString().slice(0, 10)}.xlsx`;
-      XLSX.writeFile(workbook, fileName);
-      showFloatingPanel('Student data exported to Excel.', 'success');
-    } catch (err) {
-      console.error(err);
-      showFloatingPanel('Failed to export student data.', 'error');
-    }
+    const workbook =
+      XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.json_to_sheet(summaryRows),
+      'Summary'
+    );
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.json_to_sheet(studentRows),
+      'Students'
+    );
+
+    const fileName =
+      `student-monitoring-${
+        new Date()
+          .toISOString()
+          .slice(0, 10)
+      }.xlsx`;
+
+    XLSX.writeFile(
+      workbook,
+      fileName
+    );
+
+    showFloatingPanel(
+      'Student data exported to Excel.',
+      'success'
+    );
+  } catch (err) {
+    console.error(err);
+
+    showFloatingPanel(
+      'Failed to export student data.',
+      'error'
+    );
   }
+}
 
   if (loading) return null;
 
@@ -317,6 +397,8 @@ export default function TeacherDashboard() {
             <img
               src="/assets/Background/mdps.svg"
               alt="Mother of Divine Providence School logo"
+              width="160"
+              height="160"
             />
           </span>
 
@@ -375,9 +457,7 @@ export default function TeacherDashboard() {
           <button className="menu-link" onClick={onPrintData}>
             Export Student Data
           </button>
-          <button className="menu-link logout-btn" onClick={onLogout}>
-            Logout
-          </button>
+          <LogoutButton className="menu-link logout-btn" />
         </div>
       </aside>
 
@@ -388,6 +468,8 @@ export default function TeacherDashboard() {
               src="/assets/Background/mdps.svg"
               alt=""
               aria-hidden="true"
+              width="220"
+              height="220"
             />
           </div>
 
@@ -443,8 +525,8 @@ export default function TeacherDashboard() {
         <section className="mdps-overview-panel">
           <div className="mdps-panel-heading">
             <div>
-              <p className="mdps-panel-kicker">LIVE FIREBASE DATA</p>
-              <h2>Student Monitoring Overview</h2>
+              <p className="mdps-panel-kicker">ASSIGNMENT COVERAGE</p>
+              <h2>Grade and Section Overview</h2>
             </div>
 
             <button className="mdps-export-btn" type="button" onClick={onPrintData}>

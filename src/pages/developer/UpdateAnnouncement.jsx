@@ -66,7 +66,7 @@ export default function UpdateAnnouncement() {
       return;
     }
     if ((user.role || 'student') !== 'developer') {
-      navigate('/dashboard/student', { replace: true });
+      navigate('/login', { replace: true });
     }
   }, [loading, user, navigate]);
 

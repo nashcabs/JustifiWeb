@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Chart from 'chart.js/auto';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { getDisplayName, logout } from '../../services/justifiFirebase.js';
+import { getDisplayName } from '../../services/justifiFirebase.js';
+import LogoutButton from '../../components/LogoutButton.jsx';
 
 function safeText(value) {
   if (value === null || value === undefined) return '';
@@ -151,15 +152,6 @@ export default function StudentDashboard() {
     }, 3000);
   }
 
-  async function onLogout() {
-    try {
-      await logout();
-    } catch {
-      // ignore
-    }
-    navigate('/login', { replace: true });
-  }
-
   return (
     <>
       <header className="topbar">
@@ -204,10 +196,7 @@ export default function StudentDashboard() {
         </div>
 
         <div className="side-menu-body">
-          <button className="menu-link" onClick={() => navigate('/student/profile')}>Profile</button>
-          <button className="menu-link" onClick={() => navigate('/student/badges')}>Badges</button>
-          <button className="menu-link" onClick={() => navigate('/student/quizzes')}>Quizzes</button>
-          <button className="menu-link logout-btn" onClick={onLogout}>Logout</button>
+          <LogoutButton className="menu-link logout-btn" />
         </div>
       </aside>
 
@@ -260,20 +249,10 @@ export default function StudentDashboard() {
             <h2>Main Sections</h2>
 
             <div className="action-grid">
-              <button className="feature-card" onClick={() => navigate('/student/profile')}>
-                <h3>Profile</h3>
-                <p>View your personal information and learning record.</p>
-              </button>
-
-              <button className="feature-card" onClick={() => navigate('/student/badges')}>
-                <h3>Badges</h3>
-                <p>See your earned achievements and rewards.</p>
-              </button>
-
-              <button className="feature-card" onClick={() => navigate('/student/quizzes')}>
-                <h3>Quizzes</h3>
-                <p>Review your quiz activities and progress scores.</p>
-              </button>
+              <div className="feature-card">
+                <h3>Learning Progress</h3>
+                <p>Review your lessons, badges, and quiz progress below.</p>
+              </div>
             </div>
           </section>
 

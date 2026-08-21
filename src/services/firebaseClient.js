@@ -6,7 +6,6 @@ import {
 
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../config/firebaseConfig.js';
 
 /**
@@ -29,6 +28,10 @@ export const firebaseApp = getFirebaseApp();
  */
 export const auth = getAuth(firebaseApp);
 export const db = getFirestore(firebaseApp);
-export const storage = getStorage(firebaseApp);
+
+export async function getFirebaseStorage() {
+  const { getStorage } = await import('firebase/storage');
+  return getStorage(firebaseApp);
+}
 
 export default firebaseApp;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { getStudents, logout } from '../../services/justifiFirebase.js';
 import TeacherAdminNav from '../../components/TeacherAdminNav.jsx';
+import LogoutButton from '../../components/LogoutButton.jsx';
 
 function getAverageProgress(student) {
   const progress = Array.isArray(student?.progress) ? student.progress : [];
@@ -67,7 +68,7 @@ export default function TeacherStudents() {
     }
 
     if ((user.role || 'student') !== 'teacher') {
-      navigate('/dashboard/student', { replace: true });
+      navigate('/login', { replace: true });
     }
   }, [loading, user, navigate]);
 
@@ -232,6 +233,8 @@ useEffect(() => {
             <img
               src="/assets/Background/mdps.svg"
               alt="Mother of Divine Providence School logo"
+              width="160"
+              height="160"
             />
           </span>
 
@@ -301,13 +304,7 @@ useEffect(() => {
             Manage Students
           </button>
 
-          <button
-            className="menu-link logout-btn"
-            type="button"
-            onClick={onLogout}
-          >
-            Logout
-          </button>
+          <LogoutButton className="menu-link logout-btn" />
         </div>
       </aside>
 
@@ -318,6 +315,8 @@ useEffect(() => {
               src="/assets/Background/mdps.svg"
               alt=""
               aria-hidden="true"
+              width="220"
+              height="220"
             />
           </div>
 
@@ -333,23 +332,6 @@ useEffect(() => {
               learning progress, quiz performance, and achievements.
             </p>
 
-            <div className="mdps-hero-actions">
-              <button
-                className="mdps-btn mdps-btn-light"
-                type="button"
-                onClick={() => navigate('/teacher/manage-students')}
-              >
-                Manage Student Records
-              </button>
-
-              <button
-                className="mdps-btn mdps-btn-outline"
-                type="button"
-                onClick={() => navigate('/dashboard/teacher')}
-              >
-                Back to Dashboard
-              </button>
-            </div>
           </div>
         </section>
 

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { formatRoleLabel, subscribeToUsers, updateUserRoleByEmail } from '../../services/justifiFirebase.js';
+import { formatRoleLabel, STANDARD_SECTIONS, subscribeToUsers, updateUserRoleByEmail } from '../../services/justifiFirebase.js';
 
 
 export default function AssignRoles() {
@@ -16,7 +16,7 @@ export default function AssignRoles() {
   const [selected, setSelected] = useState(null);
   const [newRole, setNewRole] = useState('student');
   const [newGradeLevel, setNewGradeLevel] = useState('');
-  const [newSection, setNewSection] = useState('');
+  const [newSections, setNewSections] = useState([]);
   const [loadError, setLoadError] = useState('');
 
   const [toast, setToast] = useState({ message: '', type: 'success' });
@@ -28,7 +28,7 @@ export default function AssignRoles() {
       return;
     }
     if ((user.role || 'student') !== 'developer') {
-      navigate('/dashboard/student', { replace: true });
+      navigate('/login', { replace: true });
     }
   }, [loading, user, navigate]);
 
@@ -88,7 +88,7 @@ export default function AssignRoles() {
     setSelected(u);
     setNewRole(u.role || 'student');
     setNewGradeLevel(u.assignedGradeLevel || '');
-    setNewSection(u.assignedSection || '');
+    setNewSections(Array.isArray(u.assignedSections) ? u.assignedSections : (u.assignedSection ? [u.assignedSection] : []));
   }
 
   async function onSubmit() {
@@ -99,7 +99,7 @@ export default function AssignRoles() {
     }
 
     try {
-      await updateUserRoleByEmail(email, newRole, newGradeLevel, newSection);
+      await updateUserRoleByEmail(email, newRole, newGradeLevel, newSections[0] || '', newSections);
       showToast('Role updated successfully!', 'success');
       setSelected(null);
     } catch (err) {
@@ -234,14 +234,17 @@ export default function AssignRoles() {
               </div>
 
               <div className="form-field" id="sectionField" style={{ display: showTeacherFields ? 'block' : 'none' }}>
-                <label htmlFor="newSection">Section (for teachers):</label>
-                <input
-                  type="text"
-                  id="newSection"
-                  placeholder="Example: Section A"
-                  value={newSection}
-                  onChange={(e) => setNewSection(e.target.value)}
-                />
+                <span>Assigned sections (for teachers):</span>
+                {STANDARD_SECTIONS.filter((section) => section !== 'No Section').map((section) => (
+                  <label className="section-checkbox" key={section}>
+                    <input
+                      type="checkbox"
+                      checked={newSections.includes(section)}
+                      onChange={() => setNewSections((current) => current.includes(section) ? current.filter((item) => item !== section) : [...current, section])}
+                    />
+                    {section}
+                  </label>
+                ))}
               </div>
 
               <button className="assign-btn" id="submitRoleBtn" type="button" onClick={onSubmit}>

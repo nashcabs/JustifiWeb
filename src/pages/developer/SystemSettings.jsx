@@ -15,7 +15,7 @@ export default function SystemSettings() {
       return;
     }
     if ((user.role || 'student') !== 'developer') {
-      navigate('/dashboard/student', { replace: true });
+      navigate('/login', { replace: true });
     }
   }, [loading, user, navigate]);
 
@@ -25,7 +25,7 @@ export default function SystemSettings() {
     <div className="developer-page">
       <header className="topbar">
         <a className="brand" href="#" onClick={(e) => { e.preventDefault(); navigate('/dashboard/developer'); }}>
-          <img className="brand-logo" src="/assets/Title/JustiFiLogo.png" alt="JustiFi logo" />
+          <img className="brand-logo" src="/assets/Title/JustiFiLogo.png" alt="JustiFi logo" width="220" height="80" />
         </a>
 
         <div className="topbar-right">

@@ -23,9 +23,35 @@ export default defineConfig(() => {
     };
   }
 
+  function preloadGeneratedCss() {
+    return {
+      name: 'preload-generated-css',
+      transformIndexHtml: {
+        order: 'post',
+        handler(html) {
+          return html.replace(
+            /<link rel="stylesheet" crossorigin href="([^"]+\.css)">/g,
+            '<link rel="preload" as="style" crossorigin href="$1" onload="this.onload=null;this.rel=\'stylesheet\'"><noscript><link rel="stylesheet" crossorigin href="$1"></noscript>'
+          );
+        }
+      }
+    };
+  }
+
   return {
     base: normalizedBasePath,
-    plugins: [rewritePublicAssetPaths(), react()],
+    plugins: [rewritePublicAssetPaths(), preloadGeneratedCss(), react()],
+    build: {
+      cssCodeSplit: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+            charts: ['chart.js/auto']
+          }
+        }
+      }
+    },
     server: {
       port: 3000
     }

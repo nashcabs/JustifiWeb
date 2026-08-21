@@ -16,6 +16,7 @@ service cloud.firestore {
     //   - fullName: string (optional)
     //   - role: string (required)
     //   - accountStatus: string (optional)
+    //   - isActive: bool (optional)
     //   - profileCompleted: bool (optional)
     //   - birthdate: string (optional)
     //   - studentNumber: string (optional)
@@ -83,6 +84,7 @@ service cloud.firestore {
           'schoolId',
           'schoolName',
           'accountStatus',
+          'isActive',
           'profileCompleted',
           'birthdate',
           'studentNumber',
@@ -117,6 +119,7 @@ service cloud.firestore {
         && (!('lastName' in data) || data.lastName is string)
         && (!('fullName' in data) || data.fullName is string)
         && (!('accountStatus' in data) || data.accountStatus is string)
+        && (!('isActive' in data) || data.isActive is bool)
         && (!('profileCompleted' in data) || data.profileCompleted is bool)
         && (!('birthdate' in data) || data.birthdate is string)
         && (!('studentNumber' in data) || data.studentNumber is string)
@@ -176,6 +179,8 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && (!('assignedGradeLevel' in request.resource.data) || request.resource.data.assignedGradeLevel is string)
         && (!('assignedSection' in request.resource.data) || request.resource.data.assignedSection is string)
+        && (!('assignedSections' in request.resource.data) || request.resource.data.assignedSections is list)
+        && (!('isActive' in request.resource.data) || request.resource.data.isActive is bool)
         && (!('updatedAt' in request.resource.data) || isTimestamp(request.resource.data.updatedAt));
     }
 

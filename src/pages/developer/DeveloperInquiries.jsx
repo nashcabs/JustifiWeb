@@ -85,6 +85,12 @@ export default function DeveloperInquiries() {
   ] = useState(false);
 
 
+  const [
+    actionError,
+    setActionError
+  ] = useState('');
+
+
 
   /* =========================================
      ROLE PROTECTION
@@ -109,7 +115,7 @@ export default function DeveloperInquiries() {
       'developer'
     ) {
       navigate(
-        '/dashboard/student',
+        '/login',
         {
           replace: true
         }
@@ -290,6 +296,7 @@ export default function DeveloperInquiries() {
   async function openInquiry(
     inquiry
   ) {
+    setActionError('');
     setSelectedInquiry(
       inquiry
     );
@@ -325,6 +332,12 @@ export default function DeveloperInquiries() {
           error
         );
 
+        setActionError(
+          error?.code === 'permission-denied'
+            ? 'You do not have permission to update this inquiry.'
+            : 'Unable to update this inquiry right now.'
+        );
+
       }
     }
   }
@@ -345,6 +358,7 @@ export default function DeveloperInquiries() {
 
 
     setUpdating(true);
+    setActionError('');
 
 
     try {
@@ -370,6 +384,12 @@ export default function DeveloperInquiries() {
       console.error(
         'Failed to resolve inquiry:',
         error
+      );
+
+      setActionError(
+        error?.code === 'permission-denied'
+          ? 'You do not have permission to update this inquiry.'
+          : 'Unable to update this inquiry right now.'
       );
 
     } finally {
@@ -1027,6 +1047,15 @@ export default function DeveloperInquiries() {
                 inquiry-detail-body
               "
             >
+
+                {actionError && (
+                  <p
+                    className="inquiry-action-error"
+                    role="alert"
+                  >
+                    {actionError}
+                  </p>
+                )}
 
 
               <div

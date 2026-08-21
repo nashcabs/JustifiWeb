@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { getDisplayName, logout, subscribeToUsers } from '../../services/justifiFirebase.js';
+import { getDisplayName, subscribeToUsers } from '../../services/justifiFirebase.js';
+import LogoutButton from '../../components/LogoutButton.jsx';
 
 
 export default function DeveloperDashboard() {
@@ -25,7 +26,7 @@ export default function DeveloperDashboard() {
       return;
     }
     if ((user.role || 'student') !== 'developer') {
-      navigate('/dashboard/student', { replace: true });
+      navigate('/login', { replace: true });
     }
   }, [loading, user, navigate]);
 
@@ -64,15 +65,6 @@ export default function DeveloperDashboard() {
       }
     };
   }, [user]);
-
-  async function onLogout() {
-    try {
-      await logout();
-    } catch {
-      // ignore
-    }
-    navigate('/login', { replace: true });
-  }
 
   if (loading) return null;
 
@@ -117,7 +109,7 @@ export default function DeveloperDashboard() {
           <button className="menu-link" onClick={() => navigate('/developer/assign-roles')}>Assign Roles</button>
           <button className="menu-link" onClick={() => navigate('/developer/manage-accounts')}>Manage Accounts</button>
          <button className="menu-link" onClick={() => navigate('/developer/inquiries')}>Manage Inquiries</button>
-          <button className="menu-link logout-btn" onClick={onLogout}>Logout</button>
+          <LogoutButton className="menu-link logout-btn" />
         </div>
       </aside>
 
