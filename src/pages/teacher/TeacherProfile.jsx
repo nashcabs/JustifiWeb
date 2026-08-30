@@ -1,13 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { getDisplayName, logout, updateCurrentUserProfile } from '../../services/justifiFirebase.js';
+import { getDisplayName, updateCurrentUserProfile } from '../../services/justifiFirebase.js';
 import { getFirebaseStorage } from '../../services/firebaseClient.js';
 import TeacherAdminNav from '../../components/TeacherAdminNav.jsx';
 import LogoutButton from '../../components/LogoutButton.jsx';
+import './TeacherProfile.css';
 
 
 const DEFAULT_AVATAR = '/assets/Profile/default-avatar.webp';
+const DEFAULT_AVATAR_SRCSET = [
+  '/assets/Profile/default-avatar-112.webp 112w',
+  '/assets/Profile/default-avatar-224.webp 224w'
+].join(', ');
 
 function formatValue(value) {
   if (!value) return 'Not available';
@@ -20,10 +25,10 @@ function formatValue(value) {
   }
 }
 
-async function optimizeProfileImage(file) {
+async function createProfileThumbnail(file) {
   const bitmap = await createImageBitmap(file);
 
-  const MAX_SIZE = 512;
+  const MAX_SIZE = 256;
 
   let width = bitmap.width;
   let height = bitmap.height;
@@ -81,6 +86,7 @@ export default function TeacherProfile() {
   const [floatingMessage, setFloatingMessage] = useState('');
   const [floatingType, setFloatingType] = useState('success');
   const [saving, setSaving] = useState(false);
+  const [removingImage, setRemovingImage] = useState(false);
 
   const [form, setForm] = useState({
     firstName: '',
@@ -116,8 +122,9 @@ export default function TeacherProfile() {
   }, [loading, user, navigate]);
 
   const displayName = useMemo(() => getDisplayName(user) || user?.email || 'Admin', [user]);
- const profileImageSrc = useMemo(() => {
+  const profileImageSrc = useMemo(() => {
   return (
+    user?.profileImage?.thumbnailUrl ||
     user?.profileImage?.cloudUrl ||
     user?.profileImage?.localPath ||
     user?.avatarDataUrl ||
@@ -129,15 +136,6 @@ export default function TeacherProfile() {
     setFloatingMessage(String(message || ''));
     setFloatingType(type);
     window.setTimeout(() => setFloatingMessage(''), 3000);
-  }
-
-  async function onLogout() {
-    try {
-      await logout();
-    } catch {
-      // ignore
-    }
-    navigate('/login', { replace: true });
   }
 
   async function onSave() {
@@ -204,40 +202,49 @@ async function onProfileImageChange(e) {
     return;
   }
 
-if (file.size > 10 * 1024 * 1024) {
-  showFloatingPanel('Image is too large. Please upload below 10MB.', 'error');
-  e.target.value = '';
-  return;
-}
-
-
   try {
     const [{ getDownloadURL, ref, uploadBytes }, storage] = await Promise.all([
       import('firebase/storage'),
       getFirebaseStorage()
     ]);
-    const optimizedImage =
-  await optimizeProfileImage(file);
+    const thumbnail = await createProfileThumbnail(file);
 
-const imageRef = ref(
+const originalImageRef = ref(
   storage,
-  `profileImages/${user.uid}/profile.webp`
+  `profileImages/${user.uid}/profile-original`
 );
 
 await uploadBytes(
-  imageRef,
-  optimizedImage,
+  originalImageRef,
+  file,
+  {
+    contentType: file.type
+  }
+);
+
+const thumbnailImageRef = ref(
+  storage,
+  `profileImages/${user.uid}/profile-thumbnail.webp`
+);
+
+await uploadBytes(
+  thumbnailImageRef,
+  thumbnail,
   {
     contentType: 'image/webp'
   }
 );
 
-    const downloadUrl = await getDownloadURL(imageRef);
+    const [downloadUrl, thumbnailUrl] = await Promise.all([
+      getDownloadURL(originalImageRef),
+      getDownloadURL(thumbnailImageRef)
+    ]);
 
     const updatedUser = await updateCurrentUserProfile({
       profileImage: {
         localPath: '',
-        cloudUrl: downloadUrl
+        cloudUrl: downloadUrl,
+        thumbnailUrl
       }
     });
 
@@ -248,6 +255,44 @@ await uploadBytes(
     showFloatingPanel('Failed to update profile image.', 'error');
   } finally {
     e.target.value = '';
+  }
+}
+
+async function onRemoveProfileImage() {
+  if (!user || removingImage) return;
+
+  setRemovingImage(true);
+  try {
+    const [{ deleteObject, ref }, storage] = await Promise.all([
+      import('firebase/storage'),
+      getFirebaseStorage()
+    ]);
+
+    const imagePaths = [
+      `profileImages/${user.uid}/profile-original`,
+      `profileImages/${user.uid}/profile-thumbnail.webp`,
+      `profileImages/${user.uid}/profile.webp`
+    ];
+
+    await Promise.allSettled(
+      imagePaths.map((imagePath) => deleteObject(ref(storage, imagePath)))
+    );
+
+    const updatedUser = await updateCurrentUserProfile({
+      profileImage: {
+        localPath: '',
+        cloudUrl: '',
+        thumbnailUrl: ''
+      }
+    });
+
+    setUser?.(updatedUser);
+    showFloatingPanel('Profile image removed.', 'success');
+  } catch (err) {
+    console.error(err);
+    showFloatingPanel('Failed to remove profile image.', 'error');
+  } finally {
+    setRemovingImage(false);
   }
 }
 
@@ -352,11 +397,12 @@ await uploadBytes(
             <img
               className="mdps-profile-photo"
               src={profileImageSrc}
+              srcSet={profileImageSrc === DEFAULT_AVATAR ? DEFAULT_AVATAR_SRCSET : undefined}
+              sizes="112px"
               alt={`${displayName} profile`}
               width="112"
               height="112"
-              loading="eager"
-              fetchPriority="high"
+              loading="lazy"
               decoding="async"
             />
 
@@ -367,6 +413,20 @@ await uploadBytes(
               >
                 ✎
               </label>
+
+              {(user?.profileImage?.cloudUrl ||
+                user?.profileImage?.thumbnailUrl ||
+                user?.profileImage?.localPath) && (
+                <button
+                  className="mdps-photo-remove"
+                  type="button"
+                  onClick={onRemoveProfileImage}
+                  disabled={removingImage}
+                  aria-label="Remove profile photo"
+                >
+                  {removingImage ? '...' : '×'}
+                </button>
+              )}
 
               <input
                 id="profileImageInput"

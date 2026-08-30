@@ -46,4 +46,14 @@ for (const [relativeSource, maxWidth] of assets) {
     .toFile(output);
 }
 
-console.log(`Optimized ${assets.length} assets into public/assets/optimized.`);
+const defaultAvatar = path.join(root, 'public/assets/Profile/default-avatar.webp');
+await Promise.all(
+  [112, 224].map((width) =>
+    sharp(defaultAvatar)
+      .resize({ width, height: width, fit: 'cover' })
+      .webp({ quality: 82, effort: 5 })
+      .toFile(path.join(root, `public/assets/Profile/default-avatar-${width}.webp`)),
+  ),
+);
+
+console.log(`Optimized ${assets.length} assets and responsive profile avatars.`);

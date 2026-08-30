@@ -52,6 +52,11 @@
   scroll-behavior: smooth;
 }
 
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   background: #0f0f1a;
   color: white;
@@ -3840,6 +3845,9 @@ body::before {
 .chart-box canvas {
   width: 100% !important;
   height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  display: block !important;
 }
 
 .list-header {
@@ -9491,9 +9499,15 @@ body {
 }
 
 /* images scale smoothly */
-img {
+img,
+canvas {
   max-width: 100%;
   height: auto;
+  display: block;
+}
+
+canvas {
+  max-height: 100vh;
 }
 
 /* navbar scales but does not break */
@@ -12102,8 +12116,12 @@ width: clamp(1000px, 88vw, 1600px);
    ========================================================= */
 
 .support-partners-flow {
-  background:
-    #352119 url("/assets/Background/brown_bg.svg") center / cover fixed !important;
+  background-color: #352119 !important;
+  background-image: url("/assets/Background/brown_bg.svg") !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
 }
 
 .support-page,
@@ -13139,15 +13157,19 @@ width: clamp(1000px, 88vw, 1600px);
 }
 
 #partners.partners-page {
-  background:
+  background-color: #352119 !important;
+  background-image: 
     linear-gradient(
       180deg,
       rgba(255, 255, 255, 0.52),
       rgba(255, 255, 255, 0.28) 42%,
       rgba(255, 255, 255, 0.14)
     ),
-    url("/assets/Background/brown_bg.svg")
-    center top / cover fixed no-repeat !important;
+    url("/assets/Background/brown_bg.svg") !important;
+  background-position: center top !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
 }
 
 /*
@@ -14654,7 +14676,7 @@ width: clamp(1000px, 88vw, 1600px);
 }
 
 .mdps-admin-page .mdps-field input[readonly] {
-  color: #717985;
+  color: #4e5664;
   background: #f6f7f9;
 }
 
@@ -14978,8 +15000,7 @@ width: clamp(1000px, 88vw, 1600px);
   padding: 22px;
 }
 
-.mdps-admin-page .mdps-modal-actions,
-.mdps-admin-page .mdps-profile-actions {
+.mdps-admin-page .mdps-modal-actions {
   margin-top: 22px;
 
   display: flex;
@@ -15003,216 +15024,6 @@ width: clamp(1000px, 88vw, 1600px);
   color: #ffffff;
   border-color: var(--mdps-maroon);
   background: var(--mdps-maroon);
-}
-
-/* Profile page */
-.mdps-admin-page .mdps-profile-hero {
-  min-height: 225px;
-  display: flex;
-  align-items: center;
-}
-
-.mdps-admin-page .mdps-profile-hero-content {
-  position: relative;
-  z-index: 1;
-
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.mdps-admin-page .mdps-profile-photo-wrap {
-  position: relative;
-  width: 112px;
-  height: 112px;
-  flex: 0 0 112px;
-}
-
-.mdps-admin-page .mdps-profile-photo {
-  width: 100%;
-  height: 100%;
-
-  display: block;
-  object-fit: cover;
-
-  border: 5px solid rgba(255, 255, 255, 0.96);
-  border-radius: 22px;
-  background: #ffffff;
-  box-shadow: 0 10px 25px rgba(53, 0, 14, 0.24);
-}
-
-.mdps-admin-page .mdps-photo-edit {
-  position: absolute;
-  right: -6px;
-  bottom: -6px;
-
-  width: 35px;
-  height: 35px;
-
-  display: grid;
-  place-items: center;
-
-  color: var(--mdps-maroon);
-  border: 3px solid var(--mdps-maroon);
-  border-radius: 50%;
-  background: #ffffff;
-
-  font-size: 0.85rem;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.mdps-admin-page .mdps-hidden-file-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.mdps-admin-page .mdps-profile-hero-copy {
-  min-width: 0;
-}
-
-.mdps-admin-page .mdps-profile-hero-copy h1 {
-  margin: 0;
-  color: #ffffff;
-  font-size: clamp(1.75rem, 3.5vw, 2.75rem);
-  line-height: 1.08;
-}
-
-.mdps-admin-page .mdps-profile-hero-copy > p:not(.mdps-hero-eyebrow) {
-  margin: 9px 0 0;
-  color: rgba(255, 255, 255, 0.84);
-  font-size: 0.9rem;
-}
-
-.mdps-admin-page .mdps-profile-status-row {
-  margin-top: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.mdps-admin-page .mdps-profile-status {
-  padding: 6px 10px;
-
-  color: var(--mdps-maroon);
-  border-radius: 999px;
-  background: #ffffff;
-
-  font-size: 0.65rem;
-  font-weight: 800;
-}
-
-.mdps-admin-page .mdps-profile-status-light {
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.mdps-admin-page .mdps-profile-form-panel {
-  padding: 22px;
-}
-
-.mdps-admin-page .mdps-profile-form {
-  margin-top: 20px;
-  display: grid;
-  gap: 18px;
-}
-
-.mdps-admin-page .mdps-form-section {
-  padding: 20px;
-
-  border: 1px solid #e8eaf0;
-  border-radius: 13px;
-  background: #ffffff;
-}
-
-.mdps-admin-page .mdps-form-section-heading {
-  margin-bottom: 17px;
-
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.mdps-admin-page .mdps-form-section-heading > span {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-
-  display: grid;
-  place-items: center;
-
-  color: #ffffff;
-  border-radius: 9px;
-  background: var(--mdps-maroon);
-
-  font-size: 0.67rem;
-  font-weight: 850;
-}
-
-.mdps-admin-page .mdps-form-section-heading strong,
-.mdps-admin-page .mdps-form-section-heading small {
-  display: block;
-}
-
-.mdps-admin-page .mdps-form-section-heading strong {
-  color: #29313e;
-  font-size: 0.83rem;
-}
-
-.mdps-admin-page .mdps-form-section-heading small {
-  margin-top: 3px;
-  color: #8a929e;
-  font-size: 0.65rem;
-}
-
-.mdps-admin-page .mdps-profile-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.mdps-admin-page .mdps-account-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 11px;
-}
-
-.mdps-admin-page .mdps-account-grid article {
-  min-width: 0;
-  padding: 13px;
-
-  border: 1px solid #eceef2;
-  border-radius: 10px;
-  background: #f8f9fb;
-}
-
-.mdps-admin-page .mdps-account-grid span,
-.mdps-admin-page .mdps-account-grid strong {
-  display: block;
-}
-
-.mdps-admin-page .mdps-account-grid span {
-  color: #858d99;
-  font-size: 0.61rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.mdps-admin-page .mdps-account-grid strong {
-  margin-top: 5px;
-  overflow-wrap: anywhere;
-
-  color: #303845;
-  font-size: 0.72rem;
-  line-height: 1.38;
-}
-
-.mdps-admin-page .mdps-profile-actions {
-  padding-top: 2px;
 }
 
 /* Responsive */
@@ -15240,53 +15051,12 @@ width: clamp(1000px, 88vw, 1600px);
     grid-row: 1;
   }
 
-  .mdps-admin-page .mdps-profile-grid,
-  .mdps-admin-page .mdps-account-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 620px) {
-  .mdps-admin-page .mdps-form-grid,
-  .mdps-admin-page .mdps-profile-grid,
-  .mdps-admin-page .mdps-account-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .mdps-admin-page .mdps-profile-hero-content {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .mdps-admin-page .mdps-profile-photo-wrap {
-    width: 94px;
-    height: 94px;
-    flex-basis: 94px;
-  }
-
-  .mdps-admin-page .mdps-profile-form-panel,
-  .mdps-admin-page .mdps-form-section {
-    padding: 16px;
-  }
-
-  .mdps-admin-page .mdps-panel-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .mdps-admin-page .mdps-export-btn {
-    width: 100%;
-  }
-
-  .mdps-admin-page .mdps-modal-actions,
-  .mdps-admin-page .mdps-profile-actions {
+  .mdps-admin-page .mdps-modal-actions {
     display: grid;
     grid-template-columns: 1fr;
-  }
-
-  .mdps-admin-page .mdps-btn-cancel,
-  .mdps-admin-page .mdps-btn-save {
-    width: 100%;
   }
 }
 
@@ -16666,10 +16436,13 @@ width: clamp(1000px, 88vw, 1600px);
 .team-note-card h3 {
   min-height: 2.5em !important;
 
-  display: -webkit-box !important;
+  display: block !important;
   overflow: hidden !important;
-  -webkit-box-orient: vertical !important;
+  overflow-wrap: break-word !important;
+  line-clamp: 2 !important;
   -webkit-line-clamp: 2 !important;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
 
   line-height: 1.25 !important;
 }
@@ -16677,10 +16450,13 @@ width: clamp(1000px, 88vw, 1600px);
 .team-note-card p {
   min-height: 2.5em !important;
 
-  display: -webkit-box !important;
+  display: block !important;
   overflow: hidden !important;
-  -webkit-box-orient: vertical !important;
+  overflow-wrap: break-word !important;
+  line-clamp: 2 !important;
   -webkit-line-clamp: 2 !important;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
 
   line-height: 1.25 !important;
 }
@@ -16741,6 +16517,7 @@ width: clamp(1000px, 88vw, 1600px);
     letter-spacing: 0.04em !important;
 
     white-space: nowrap !important;
+    left: -8px !important;
 
     color: #fffdf4 !important;
 
@@ -16756,6 +16533,7 @@ width: clamp(1000px, 88vw, 1600px);
 
     line-height: 1.05 !important;
     letter-spacing: 0.04em !important;
+    left: -10px !important;
 
     color: #fffdf4 !important;
 

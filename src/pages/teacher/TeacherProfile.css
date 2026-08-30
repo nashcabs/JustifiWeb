@@ -1,0 +1,295 @@
+.mdps-admin-page .mdps-profile-hero {
+  min-height: 225px;
+  display: flex;
+  align-items: center;
+}
+
+.mdps-admin-page .mdps-profile-hero-content {
+  position: relative;
+  z-index: 1;
+
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.mdps-admin-page .mdps-profile-photo-wrap {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  flex: 0 0 112px;
+}
+
+.mdps-admin-page .mdps-profile-photo {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+  object-fit: cover;
+
+  border: 5px solid rgba(255, 255, 255, 0.96);
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 10px 25px rgba(53, 0, 14, 0.24);
+}
+
+.mdps-admin-page .mdps-photo-edit {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+
+  width: 35px;
+  height: 35px;
+
+  display: grid;
+  place-items: center;
+
+  color: var(--mdps-maroon);
+  border: 3px solid var(--mdps-maroon);
+  border-radius: 50%;
+  background: #ffffff;
+
+  font-size: 0.85rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.mdps-admin-page .mdps-photo-remove {
+  position: absolute;
+  left: -6px;
+  bottom: -6px;
+
+  width: 35px;
+  height: 35px;
+
+  display: grid;
+  place-items: center;
+
+  color: #ffffff;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: var(--mdps-maroon-dark, #680018);
+
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mdps-admin-page .mdps-photo-remove:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.mdps-admin-page .mdps-hidden-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mdps-admin-page .mdps-profile-hero-copy {
+  min-width: 0;
+}
+
+.mdps-admin-page .mdps-profile-hero-copy .mdps-hero-eyebrow {
+  color: #ffffff;
+}
+
+.mdps-admin-page .mdps-profile-hero-copy h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+  line-height: 1.08;
+}
+
+.mdps-admin-page .mdps-profile-hero-copy > p:not(.mdps-hero-eyebrow) {
+  margin: 9px 0 0;
+  color: #ffffff;
+  font-size: 0.9rem;
+}
+
+.mdps-admin-page .mdps-profile-status-row {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mdps-admin-page .mdps-profile-status {
+  padding: 6px 10px;
+
+  color: var(--mdps-maroon);
+  border-radius: 999px;
+  background: #ffffff;
+
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.mdps-admin-page .mdps-profile-status-light {
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  background: rgba(31, 17, 23, 0.38);
+}
+
+.mdps-admin-page .mdps-profile-form-panel {
+  padding: 22px;
+}
+
+.mdps-admin-page .mdps-profile-form {
+  margin-top: 20px;
+  display: grid;
+  gap: 18px;
+}
+
+.mdps-admin-page .mdps-profile-form input::placeholder {
+  color: #4e5664;
+  opacity: 1;
+}
+
+.mdps-admin-page .mdps-form-section {
+  padding: 20px;
+
+  border: 1px solid #e8eaf0;
+  border-radius: 13px;
+  background: #ffffff;
+}
+
+.mdps-admin-page .mdps-form-section-heading {
+  margin-bottom: 17px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mdps-admin-page .mdps-form-section-heading > span {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+
+  display: grid;
+  place-items: center;
+
+  color: #ffffff;
+  border-radius: 9px;
+  background: var(--mdps-maroon);
+
+  font-size: 0.67rem;
+  font-weight: 850;
+}
+
+.mdps-admin-page .mdps-form-section-heading strong,
+.mdps-admin-page .mdps-form-section-heading small {
+  display: block;
+}
+
+.mdps-admin-page .mdps-form-section-heading strong {
+  color: #29313e;
+  font-size: 0.83rem;
+}
+
+.mdps-admin-page .mdps-form-section-heading small {
+  margin-top: 3px;
+  color: #5f6875;
+  font-size: 0.65rem;
+}
+
+.mdps-admin-page .mdps-profile-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mdps-admin-page .mdps-account-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 11px;
+}
+
+.mdps-admin-page .mdps-account-grid article {
+  min-width: 0;
+  padding: 13px;
+
+  border: 1px solid #eceef2;
+  border-radius: 10px;
+  background: #f8f9fb;
+}
+
+.mdps-admin-page .mdps-account-grid span,
+.mdps-admin-page .mdps-account-grid strong {
+  display: block;
+}
+
+.mdps-admin-page .mdps-account-grid span {
+  color: #4e5664;
+  font-size: 0.61rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.mdps-admin-page .mdps-account-grid strong {
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+
+  color: #303845;
+  font-size: 0.72rem;
+  line-height: 1.38;
+}
+
+.mdps-admin-page .mdps-profile-actions {
+  padding-top: 2px;
+}
+
+@media (max-width: 900px) {
+  .mdps-admin-page .mdps-profile-grid,
+  .mdps-admin-page .mdps-account-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .mdps-admin-page .mdps-form-grid,
+  .mdps-admin-page .mdps-profile-grid,
+  .mdps-admin-page .mdps-account-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mdps-admin-page .mdps-profile-hero-content {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mdps-admin-page .mdps-profile-photo-wrap {
+    width: 94px;
+    height: 94px;
+    flex-basis: 94px;
+  }
+
+  .mdps-admin-page .mdps-profile-form-panel,
+  .mdps-admin-page .mdps-form-section {
+    padding: 16px;
+  }
+
+  .mdps-admin-page .mdps-panel-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mdps-admin-page .mdps-export-btn {
+    width: 100%;
+  }
+
+  .mdps-admin-page .mdps-modal-actions,
+  .mdps-admin-page .mdps-profile-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .mdps-admin-page .mdps-btn-cancel,
+  .mdps-admin-page .mdps-btn-save {
+    width: 100%;
+  }
+}

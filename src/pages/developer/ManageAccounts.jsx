@@ -74,7 +74,9 @@ useEffect(() => {
     const term = String(search || '').toLowerCase().trim();
     const role = String(roleFilter || '').toLowerCase().trim();
 
-    let list = Array.isArray(accounts) ? accounts : [];
+    let list = Array.isArray(accounts)
+      ? accounts.filter((account) => String(account.role || 'student').toLowerCase() !== 'developer')
+      : [];
 
     if (role) {
       list = list.filter((account) => String(account.role || 'student').toLowerCase() === role);
@@ -179,7 +181,8 @@ useEffect(() => {
 
           <div className="inquiry-toolbar">
             <input className="inquiry-search" type="search" placeholder="Search name or email..." value={search} onChange={(e) => setSearch(e.target.value)} />
-            <select className="inquiry-filter" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+            <label htmlFor="account-role-filter">Filter by role</label>
+            <select id="account-role-filter" className="inquiry-filter" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
               <option value="">All roles</option><option value="student">Student</option><option value="teacher">Teacher</option><option value="developer">Organizational Admin</option>
             </select>
           </div>
@@ -228,7 +231,8 @@ useEffect(() => {
             {selected.role === 'student' ? (
               <>
                 <label>Grade level<input value={edit.gradeLevel} onChange={(event) => setEdit({ ...edit, gradeLevel: event.target.value })} /></label>
-                <label>Section<select value={edit.section} onChange={(event) => setEdit({ ...edit, section: event.target.value })}>{STANDARD_SECTIONS.map((section) => <option key={section}>{section}</option>)}</select></label>
+                <label htmlFor="account-section">Section</label>
+                <select id="account-section" value={edit.section} onChange={(event) => setEdit({ ...edit, section: event.target.value })}>{STANDARD_SECTIONS.map((section) => <option key={section}>{section}</option>)}</select>
               </>
             ) : null}
             {selected.role === 'teacher' ? (

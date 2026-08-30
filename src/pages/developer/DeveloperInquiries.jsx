@@ -698,7 +698,12 @@ export default function DeveloperInquiries() {
             />
 
 
+            <label htmlFor="inquiry-status-filter">
+              Filter by status
+            </label>
+
             <select
+              id="inquiry-status-filter"
               className="
                 inquiry-filter
               "

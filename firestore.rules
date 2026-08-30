@@ -246,7 +246,7 @@ service cloud.firestore {
         && request.auth.uid == userId
         && isValidStudentCreate();
 
-      allow update: if (isOwner(userId) && isValidSelfUpdate())
+      allow update: if (isOwner(userId) && (isValidSelfUpdate() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quizScores', 'badges', 'updatedAt'])))
         || (isTeacher() && resource.data.role == 'student' && isValidTeacherStudentUpdate())
         || (isDeveloper() && isValidDeveloperUserUpdate());
 

@@ -4,26 +4,45 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- Preconnect to Google Fonts (DNS + TCP connection) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- 
+      Google Fonts CSS with Subresource Integrity (SRI)
+      
+      IMPORTANT: Replace [HASH_HERE] with the actual integrity hash
+      
+      To generate the hash, run:
+        node scripts/generate-sri-hashes.js
+      
+      Or use: https://www.srihash.org/
+    -->
     <link
-      rel="stylesheet"
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Patrick+Hand&display=swap"
+      integrity="sha384-[HASH_HERE]"
+      crossorigin="anonymous"
+      onLoad="this.onload=null;this.rel='stylesheet'"
     />
     <noscript>
       <link
         rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Patrick+Hand&display=swap"
+        integrity="sha384-[HASH_HERE]"
+        crossorigin="anonymous"
       />
     </noscript>
+    
+    <!-- Local assets -->
     <link rel="icon" type="image/png" href="/assets/Icons/Coin3.png" />
     <title>JustiFi</title>
-
-    
   </head>
   <body>
     <div id="root"></div>
 
+    <!-- Main application bundle - no inline scripts -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

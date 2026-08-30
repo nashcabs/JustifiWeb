@@ -97,11 +97,13 @@ function normalizeProfileImage(profile) {
 
   const localPath = image.localPath || '';
   const cloudUrl = image.cloudUrl || '';
+  const thumbnailUrl = image.thumbnailUrl || '';
 
   return {
     localPath,
     cloudUrl,
-    avatarDataUrl: cloudUrl || localPath || ''
+    thumbnailUrl,
+    avatarDataUrl: thumbnailUrl || cloudUrl || localPath || ''
   };
 }
 
@@ -226,7 +228,8 @@ async function mapUser(firebaseUser) {
 
     profileImage: {
       localPath: image.localPath,
-      cloudUrl: image.cloudUrl
+      cloudUrl: image.cloudUrl,
+      thumbnailUrl: image.thumbnailUrl
     },
 
     avatarDataUrl: image.avatarDataUrl,
@@ -320,7 +323,8 @@ function mapProfileDoc(id, profile = {}) {
 
     profileImage: {
       localPath: image.localPath,
-      cloudUrl: image.cloudUrl
+      cloudUrl: image.cloudUrl,
+      thumbnailUrl: image.thumbnailUrl
     },
 
     avatarDataUrl: image.avatarDataUrl,
@@ -870,6 +874,10 @@ export async function getStudents(viewer = null, options = {}) {
     });
   };
 
+  const filterVisibleStudentRows = (rows) => {
+    return rows.filter((row) => normalizeRole(row?.role, 'student') === 'student');
+  };
+
   const pageSizeValue =
     typeof options?.pageSize !== 'undefined'
       ? Number(options.pageSize)
@@ -898,6 +906,7 @@ export async function getStudents(viewer = null, options = {}) {
           )
       );
 
+      results = filterVisibleStudentRows(results);
       results = filterTeacherRoster(results);
 
       // If teacher has school filter and got 0 results, try without schoolId filter
@@ -918,13 +927,17 @@ export async function getStudents(viewer = null, options = {}) {
           )
         );
 
-        const fallbackResults = filterTeacherRoster(fallbackSnapshot.docs.map(
-          (documentSnapshot) =>
-            mapProfileDoc(
-              documentSnapshot.id,
-              documentSnapshot.data()
+        const fallbackResults = filterTeacherRoster(
+          filterVisibleStudentRows(
+            fallbackSnapshot.docs.map(
+              (documentSnapshot) =>
+                mapProfileDoc(
+                  documentSnapshot.id,
+                  documentSnapshot.data()
+                )
             )
-        ));
+          )
+        );
 
         if (fallbackResults.length > 0) {
           console.log('[JustiFi] WARNING: Found', fallbackResults.length, 'students WITHOUT schoolId field. These need to be updated to have schoolId:', viewerSchoolId);
@@ -948,9 +961,11 @@ export async function getStudents(viewer = null, options = {}) {
 
     if (viewerRole === 'teacher') {
       const snapshot = await getDocs(query(...queryArgs));
-      const items = filterTeacherRoster(snapshot.docs.map((documentSnapshot) =>
-        mapProfileDoc(documentSnapshot.id, documentSnapshot.data())
-      ));
+      const items = filterTeacherRoster(
+        filterVisibleStudentRows(snapshot.docs.map((documentSnapshot) =>
+          mapProfileDoc(documentSnapshot.id, documentSnapshot.data())
+        ))
+      );
 
       return {
         success: true,
@@ -969,14 +984,16 @@ export async function getStudents(viewer = null, options = {}) {
 
     const snapshot = await getDocs(query(...queryArgs));
 
-    const items = filterTeacherRoster(snapshot.docs
-      .slice(0, pageSize)
-      .map((documentSnapshot) =>
-        mapProfileDoc(
-          documentSnapshot.id,
-          documentSnapshot.data()
-        )
-      ));
+    const items = filterTeacherRoster(
+      filterVisibleStudentRows(snapshot.docs
+        .slice(0, pageSize)
+        .map((documentSnapshot) =>
+          mapProfileDoc(
+            documentSnapshot.id,
+            documentSnapshot.data()
+          )
+        ))
+    );
 
     const hasMore = snapshot.docs.length > pageSize;
     const nextCursor =

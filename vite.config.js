@@ -23,26 +23,13 @@ export default defineConfig(() => {
     };
   }
 
-  function preloadGeneratedCss() {
-    return {
-      name: 'preload-generated-css',
-      transformIndexHtml: {
-        order: 'post',
-        handler(html) {
-          return html.replace(
-            /<link rel="stylesheet" crossorigin href="([^"]+\.css)">/g,
-            '<link rel="preload" as="style" crossorigin href="$1" onload="this.onload=null;this.rel=\'stylesheet\'"><noscript><link rel="stylesheet" crossorigin href="$1"></noscript>'
-          );
-        }
-      }
-    };
-  }
-
   return {
     base: normalizedBasePath,
-    plugins: [rewritePublicAssetPaths(), preloadGeneratedCss(), react()],
+    plugins: [rewritePublicAssetPaths(), react()],
     build: {
       cssCodeSplit: true,
+      minify: 'esbuild',
+      cssMinify: 'esbuild',
       rollupOptions: {
         output: {
           manualChunks: {
