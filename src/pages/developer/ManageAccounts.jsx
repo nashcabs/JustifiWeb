@@ -3,19 +3,32 @@ import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import {
+  createUserAccountByAdmin,
+  deleteUserProfileById,
   formatRoleLabel,
-  STANDARD_SECTIONS,
+  deactivateUserProfileById,
   subscribeToUsers,
   updateUserProfileById
 } from '../../services/justifiFirebase.js';
 
+const GRADE_LEVELS = ['Grade 11', 'Grade 12'];
+const CLASS_SECTIONS = ['Section A', 'Section B'];
+
 const EMPTY_EDIT = {
   firstName: '',
   lastName: '',
-  gradeLevel: '',
-  section: 'No Section',
-  assignedSections: [],
-  isActive: true
+  gradeLevel: 'Grade 11',
+  section: 'Section A'
+};
+
+const EMPTY_NEW_ACCOUNT = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  password: '',
+  role: 'student',
+  gradeLevel: 'Grade 11',
+  section: 'Section A'
 };
 
 export default function ManageAccounts() {
@@ -24,11 +37,16 @@ export default function ManageAccounts() {
   const [accounts, setAccounts] = useState([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [selected, setSelected] = useState(null);
   const [edit, setEdit] = useState(EMPTY_EDIT);
   const [saving, setSaving] = useState(false);
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [newAccount, setNewAccount] = useState(EMPTY_NEW_ACCOUNT);
+  const [addingAccount, setAddingAccount] = useState(false);
+  const [accountAction, setAccountAction] = useState(null);
 
   useEffect(() => {
     if (loading) return;
@@ -74,9 +92,7 @@ useEffect(() => {
     const term = String(search || '').toLowerCase().trim();
     const role = String(roleFilter || '').toLowerCase().trim();
 
-    let list = Array.isArray(accounts)
-      ? accounts.filter((account) => String(account.role || 'student').toLowerCase() !== 'developer')
-      : [];
+    let list = Array.isArray(accounts) ? accounts : [];
 
     if (role) {
       list = list.filter((account) => String(account.role || 'student').toLowerCase() === role);
@@ -102,20 +118,9 @@ useEffect(() => {
     setEdit({
       firstName: account.firstName || '',
       lastName: account.lastName || '',
-      gradeLevel: account.gradeLevel || '',
-      section: STANDARD_SECTIONS.includes(account.section) ? account.section : 'No Section',
-      assignedSections: Array.isArray(account.assignedSections) ? account.assignedSections : [],
-      isActive: account.isActive !== false
+      gradeLevel: GRADE_LEVELS.includes(account.gradeLevel) ? account.gradeLevel : 'Grade 11',
+      section: CLASS_SECTIONS.includes(account.section) ? account.section : 'Section A'
     });
-  }
-
-  function toggleSection(section) {
-    setEdit((current) => ({
-      ...current,
-      assignedSections: current.assignedSections.includes(section)
-        ? current.assignedSections.filter((item) => item !== section)
-        : [...current.assignedSections, section]
-    }));
   }
 
   async function saveAccount(event) {
@@ -128,10 +133,8 @@ useEffect(() => {
         lastName: edit.lastName.trim(),
         fullName: `${edit.firstName.trim()} ${edit.lastName.trim()}`.trim(),
         ...(selected.role === 'student'
-          ? { gradeLevel: edit.gradeLevel.trim(), section: edit.section }
-          : { assignedSections: edit.assignedSections }),
-        isActive: edit.isActive,
-        accountStatus: edit.isActive ? 'active' : 'inactive'
+          ? { gradeLevel: edit.gradeLevel, section: edit.section }
+          : { assignedGradeLevel: '', assignedSection: '', assignedSections: [] })
       });
       setSelected(null);
     } catch (saveError) {
@@ -139,6 +142,86 @@ useEffect(() => {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function addAccount(event) {
+    event.preventDefault();
+    setAddingAccount(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      const createdAccount = await createUserAccountByAdmin({
+        email: newAccount.email,
+        password: newAccount.password,
+        firstName: newAccount.firstName,
+        lastName: newAccount.lastName,
+        role: newAccount.role,
+        gradeLevel: newAccount.gradeLevel,
+        section: newAccount.section,
+        isActive: true
+      });
+
+      const displayName = `${createdAccount.firstName} ${createdAccount.lastName}`.trim() || createdAccount.email;
+      setSuccessMessage(`✓ Account created for ${displayName}. Verification email sent.`);
+
+      setShowAddAccount(false);
+      setNewAccount(EMPTY_NEW_ACCOUNT);
+
+      // Clear success message after 3 seconds
+      window.setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    } catch (addError) {
+      const message = addError?.message || 'Unknown error';
+
+      if (/unauthenticated|Unauthorized|401|session expired|sign in again/i.test(message)) {
+        setError('Your admin session expired. Please sign in again as an Organizational Admin and try again.');
+      } else {
+        setError(`Failed to create account: ${message}`);
+      }
+    } finally {
+      setAddingAccount(false);
+    }
+  }
+
+  async function deleteAccount() {
+    if (!selected) return;
+
+    setSaving(true);
+    setError('');
+    setAccountAction(null);
+    try {
+      await deleteUserProfileById(selected.id);
+      setSelected(null);
+      setSuccessMessage('Account profile removed.');
+    } catch (deleteError) {
+      setError(`Failed to remove account: ${deleteError?.message || 'Unknown error'}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deactivateAccount() {
+    if (!selected || selected.isActive === false) return;
+
+    setSaving(true);
+    setError('');
+    setAccountAction(null);
+    try {
+      await deactivateUserProfileById(selected.id);
+      setSelected(null);
+      setSuccessMessage('Account deactivated. Firebase Auth credentials remain unchanged.');
+    } catch (deactivateError) {
+      setError(`Failed to deactivate account: ${deactivateError?.message || 'Unknown error'}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function requestAccountAction(action) {
+    if (!selected) return;
+    setAccountAction(action);
   }
 
   if (loading) return null;
@@ -181,15 +264,21 @@ useEffect(() => {
 
           <div className="inquiry-toolbar">
             <input className="inquiry-search" type="search" placeholder="Search name or email..." value={search} onChange={(e) => setSearch(e.target.value)} />
-            <label htmlFor="account-role-filter">Filter by role</label>
-            <select id="account-role-filter" className="inquiry-filter" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-              <option value="">All roles</option><option value="student">Student</option><option value="teacher">Teacher</option><option value="developer">Organizational Admin</option>
-            </select>
+            <button type="button" className="inquiry-action-btn" onClick={() => setShowAddAccount(true)}>
+              Add account
+            </button>
+            <div className="inquiry-role-filter">
+              <label htmlFor="account-role-filter">Filter by role</label>
+              <select id="account-role-filter" className="inquiry-filter" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+                <option value="">All roles</option><option value="student">Student</option><option value="teacher">Teacher</option><option value="developer">Organizational Admin</option>
+              </select>
+            </div>
           </div>
 
           {loadingAccounts ? <div className="inquiry-empty-state">Loading accounts...</div> : null}
+          {!loadingAccounts && successMessage ? <div className="inquiry-empty-state is-success" style={{color: '#22863a', backgroundColor: '#f0f6fc', borderColor: '#bde4b1'}}>{successMessage}</div> : null}
           {!loadingAccounts && error ? <div className="inquiry-empty-state is-error">{error}</div> : null}
-          {!loadingAccounts && !error && !filteredAccounts.length ? (
+          {!loadingAccounts && !error && !successMessage && !filteredAccounts.length ? (
             <div className="inquiry-empty-state"><strong>No accounts found</strong><p>Try changing the search or role filter.</p></div>
           ) : null}
 
@@ -208,7 +297,7 @@ useEffect(() => {
                 return (
                   <button key={id} className={['inquiry-item', status === 'inactive' ? 'is-unread' : ''].join(' ')} type="button" onClick={() => openEditor(account)}>
                     <div className="inquiry-main"><strong>{fullName}</strong><span>{account.email || 'No email'}</span></div>
-                    <div className="inquiry-subject"><strong>{formatRoleLabel(role)}</strong><p>{role === 'teacher' ? `${account.assignedSections?.length || 0} assigned section(s)` : account.section || 'No section assigned'}</p></div>
+                    <div className="inquiry-subject"><strong>{formatRoleLabel(role)}</strong><p>{role === 'student' ? `${account.gradeLevel || 'No grade'} · ${account.section || 'No section'}` : 'Account access managed below'}</p></div>
                     <div className="inquiry-meta"><span className={`inquiry-status status-${status}`}>{status}</span><small>Click to edit</small></div>
                   </button>
                 );
@@ -230,16 +319,79 @@ useEffect(() => {
             <label>Last name<input value={edit.lastName} onChange={(event) => setEdit({ ...edit, lastName: event.target.value })} /></label>
             {selected.role === 'student' ? (
               <>
-                <label>Grade level<input value={edit.gradeLevel} onChange={(event) => setEdit({ ...edit, gradeLevel: event.target.value })} /></label>
+                <label>Grade level<select value={edit.gradeLevel} onChange={(event) => setEdit({ ...edit, gradeLevel: event.target.value })}>{GRADE_LEVELS.map((grade) => <option key={grade}>{grade}</option>)}</select></label>
                 <label htmlFor="account-section">Section</label>
-                <select id="account-section" value={edit.section} onChange={(event) => setEdit({ ...edit, section: event.target.value })}>{STANDARD_SECTIONS.map((section) => <option key={section}>{section}</option>)}</select>
+                <select id="account-section" value={edit.section} onChange={(event) => setEdit({ ...edit, section: event.target.value })}>{CLASS_SECTIONS.map((section) => <option key={section}>{section}</option>)}</select>
               </>
             ) : null}
-            {selected.role === 'teacher' ? (
-              <fieldset><legend>Assigned sections</legend>{STANDARD_SECTIONS.filter((section) => section !== 'No Section').map((section) => <label className="section-checkbox" key={section}><input type="checkbox" checked={edit.assignedSections.includes(section)} onChange={() => toggleSection(section)} />{section}</label>)}</fieldset>
+            <div className="account-editor-actions"><button type="button" onClick={() => requestAccountAction('deactivate')} disabled={saving || selected.isActive === false}>Deactivate</button><button type="button" onClick={() => requestAccountAction('delete')} disabled={saving}>Delete profile</button><button type="button" onClick={() => setSelected(null)}>Cancel</button><button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</button></div>
+          </form>
+        </div>
+      ) : null}
+
+      {accountAction ? (
+        <div className="logout-modal-backdrop" role="presentation" onMouseDown={() => !saving && setAccountAction(null)}>
+          <div
+            className="logout-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="account-action-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <h2 id="account-action-title">
+              {accountAction === 'delete' ? 'Delete account profile?' : 'Deactivate account?'}
+            </h2>
+            <p>
+              {accountAction === 'delete'
+                ? `This removes ${selected?.email || 'this account'} from Firestore. Firebase Auth credentials cannot be deleted from the browser.`
+                : `This prevents ${selected?.email || 'this account'} from signing in. Firebase Auth credentials will remain unchanged.`}
+            </p>
+            <div className="logout-modal-actions">
+              <button type="button" onClick={() => setAccountAction(null)} disabled={saving}>Cancel</button>
+              <button
+                type="button"
+                onClick={accountAction === 'delete' ? deleteAccount : deactivateAccount}
+                disabled={saving}
+              >
+                {saving ? 'Working...' : accountAction === 'delete' ? 'Delete profile' : 'Deactivate'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showAddAccount ? (
+        <div className="account-editor-backdrop" role="presentation" onMouseDown={() => !addingAccount && setShowAddAccount(false)}>
+          <form className="account-editor" onSubmit={addAccount} onMouseDown={(event) => event.stopPropagation()}>
+            <div className="form-header">
+              <h2>Add Account</h2>
+              <button type="button" onClick={() => setShowAddAccount(false)} aria-label="Close add account form">X</button>
+            </div>
+
+            <label>First name<input value={newAccount.firstName} onChange={(event) => setNewAccount({ ...newAccount, firstName: event.target.value })} /></label>
+            <label>Last name<input value={newAccount.lastName} onChange={(event) => setNewAccount({ ...newAccount, lastName: event.target.value })} /></label>
+            <label>Email<input type="email" value={newAccount.email} onChange={(event) => setNewAccount({ ...newAccount, email: event.target.value })} /></label>
+            <label>Password<input type="password" value={newAccount.password} onChange={(event) => setNewAccount({ ...newAccount, password: event.target.value })} /></label>
+
+            <label htmlFor="new-account-role">Role</label>
+            <select id="new-account-role" value={newAccount.role} onChange={(event) => setNewAccount({ ...newAccount, role: event.target.value })}>
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
+              <option value="developer">Organizational Admin</option>
+            </select>
+
+            {newAccount.role === 'student' ? (
+              <>
+                <label>Grade level<select value={newAccount.gradeLevel} onChange={(event) => setNewAccount({ ...newAccount, gradeLevel: event.target.value })}>{GRADE_LEVELS.map((grade) => <option key={grade}>{grade}</option>)}</select></label>
+                <label htmlFor="new-account-section">Section</label>
+                <select id="new-account-section" value={newAccount.section} onChange={(event) => setNewAccount({ ...newAccount, section: event.target.value })}>{CLASS_SECTIONS.map((section) => <option key={section}>{section}</option>)}</select>
+              </>
             ) : null}
-            <label className="active-toggle"><input type="checkbox" checked={edit.isActive} onChange={(event) => setEdit({ ...edit, isActive: event.target.checked })} /> Active account</label>
-            <div className="account-editor-actions"><button type="button" onClick={() => setSelected(null)}>Cancel</button><button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</button></div>
+
+            <div className="account-editor-actions">
+              <button type="button" onClick={() => setShowAddAccount(false)}>Cancel</button>
+              <button type="submit" disabled={addingAccount}>{addingAccount ? 'Creating...' : 'Create account'}</button>
+            </div>
           </form>
         </div>
       ) : null}

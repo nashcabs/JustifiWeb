@@ -419,7 +419,6 @@ async function handleContactSubmit(event) {
                 <iframe
                   src="https://www.youtube-nocookie.com/embed/XN2cS8ywH_I"
                   title="JustiFi official trailer"
-                  loading="lazy"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
@@ -503,7 +502,6 @@ async function handleContactSubmit(event) {
                     <img
                       src={member.photo}
                       alt={member.name}
-                      loading="lazy"
                       decoding="async"
                       width="240"
                       height="240"
@@ -544,7 +542,6 @@ async function handleContactSubmit(event) {
                       <img
                         src={character.src}
                         alt={index === 0 ? character.alt : ''}
-                        loading="lazy"
                         decoding="async"
                         width="720"
                         height="960"
@@ -626,8 +623,7 @@ async function handleContactSubmit(event) {
                     <img
                       src={SUPPORT_PARTNER_ASSETS.ncmhLogo}
                       alt="National Center for Mental Health"
-                      loading="lazy"
-                  decoding="async"
+                      decoding="async"
                       width="180"
                       height="180"
                       onError={hideBrokenImage}
@@ -682,8 +678,7 @@ async function handleContactSubmit(event) {
                     <img
                       src={SUPPORT_PARTNER_ASSETS.pnpLogo}
                       alt="PNP Anti-Cybercrime Group"
-                      loading="lazy"
-                  decoding="async"
+                      decoding="async"
                       width="180"
                       height="180"
                       onError={hideBrokenImage}

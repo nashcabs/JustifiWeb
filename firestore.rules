@@ -113,7 +113,7 @@ service cloud.firestore {
         && data.email is string
         && data.email.size() > 0
         && data.role is string
-        && data.role in ['student', 'teacher', 'developer']
+        && data.role in ['student', 'teacher', 'developer', 'nonStudent']
         && (!('firstName' in data) || data.firstName is string)
         && (!('middleName' in data) || data.middleName is string)
         && (!('lastName' in data) || data.lastName is string)
@@ -125,7 +125,7 @@ service cloud.firestore {
         && (!('studentNumber' in data) || data.studentNumber is string)
         && (!('age' in data) || data.age is string || data.age is number)
         && (!('sex' in data) || data.sex is string)
-        && (!('schoolId' in data) || data.schoolId is string)
+        && (!('schoolId' in data) || data.schoolId is string || data.schoolId == null)
         && (!('schoolName' in data) || data.schoolName is string)
         && (!('gradeLevel' in data) || data.gradeLevel is string)
         && (!('sectionId' in data) || data.sectionId is string)
@@ -243,8 +243,13 @@ service cloud.firestore {
         || isTeacher();
 
       allow create: if isAuthenticated()
-        && request.auth.uid == userId
-        && isValidStudentCreate();
+        && (request.auth.uid == userId || isDeveloper())
+        && isValidUserBase(request.resource.data)
+        && (isDeveloper() || (
+          request.auth.uid == userId
+          && request.resource.data.email == request.auth.token.email
+          && request.resource.data.role in ['student', 'nonStudent']
+        ));
 
       allow update: if (isOwner(userId) && (isValidSelfUpdate() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quizScores', 'badges', 'updatedAt'])))
         || (isTeacher() && resource.data.role == 'student' && isValidTeacherStudentUpdate())

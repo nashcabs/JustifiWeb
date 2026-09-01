@@ -7986,8 +7986,8 @@ body {
 
 /* Role Assignment Form */
 .role-assignment-form {
-  background: var(--mdps-panel, #ffffff);
-  border: 1px solid var(--mdps-border, #e7e9ee);
+  background: #1a1426;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 16px;
   padding: 0;
   margin-top: 20px;
@@ -8005,22 +8005,22 @@ body {
   align-items: center;
   padding: 18px 20px;
   text-align: left !important;
-  border-bottom: 1px solid var(--mdps-border, #e7e9ee);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .form-header h3 {
   margin: 0;
   font-size: 18px;
-  color: var(--mdps-text, #222a38);
+  color: #fff;
 }
 
 .close-form-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid var(--mdps-border, #e7e9ee);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
   background: #fff0f4;
-  color: var(--mdps-maroon, #800020);
+  color: #fff;
   cursor: pointer;
   font-size: 18px;
   transition: 0.2s ease;
@@ -8039,17 +8039,12 @@ body {
 }
 
 #selectedEmail:read-only {
-  color: #3e1b5b;
+  color: #fff;
   opacity: 1;
 }
 
 #newRole {
-  color: #2e0c50;
-  opacity: 1;
-}
-
-#newGradeLevel {
-  color: #2e0c50;
+  color: #fff;
   opacity: 1;
 }
 
@@ -8064,7 +8059,7 @@ body {
 
 .form-field label {
   font-size: 13px;
-  color: var(--mdps-muted, #737c89);
+  color: rgba(255, 255, 255, 0.78);
   display: block;
   width: 100%;
   text-align: left !important;
@@ -8076,9 +8071,9 @@ body {
 .form-field select {
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid var(--mdps-border, #e7e9ee);
-  background: var(--mdps-panel, #ffffff);
-  color: var(--mdps-text, #222a38);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #24202f;
+  color: #fff;
   outline: none;
   font-size: 14px;
     width: 100%;
@@ -8087,12 +8082,79 @@ body {
 
 .form-field input::placeholder,
 .form-field select {
-  color: var(--mdps-muted, #737c89);
+  color: rgba(255, 255, 255, 0.58);
 }
 
 .form-field select option {
-  background: #ffffff;
-  color: var(--mdps-text, #222a38);
+  background: #24202f;
+  color: #fff;
+}
+
+#sectionField > span {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.role-assignment-form .section-checkbox {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.developer-page .status-note {
+  background: #1a1426;
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.role-assignment-form .section-checkbox {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  width: max-content !important;
+  max-width: 100%;
+  min-height: 24px;
+  margin: 0;
+  padding: 0 !important;
+  color: rgba(255, 255, 255, 0.86);
+  text-align: left;
+}
+
+.role-assignment-form .section-checkbox input {
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: #c21f4f;
+}
+
+.role-assignment-form .section-checkbox span {
+  display: block;
+  width: 220px;
+  line-height: 1.35;
+}
+
+.role-assignment-form #sectionField {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 4px !important;
+  width: fit-content !important;
+  margin-right: auto !important;
+}
+
+.role-assignment-form #sectionField .section-checkbox {
+  width: fit-content !important;
+  text-align: left !important;
+}
+
+.role-assignment-form #sectionField .section-checkbox {
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .role-assignment-form #sectionField .section-checkbox {
+    white-space: normal;
+  }
 }
 
 #submitRoleBtn {
@@ -9402,7 +9464,7 @@ body {
 }
 
 #announcement .corkboard-panel {
-  width: 100vw !important;
+  width: 100% !important;
   max-width: 1600px !important;
 }
 
@@ -12116,12 +12178,8 @@ width: clamp(1000px, 88vw, 1600px);
    ========================================================= */
 
 .support-partners-flow {
-  background-color: #352119 !important;
-  background-image: url("/assets/Background/brown_bg.svg") !important;
-  background-position: center !important;
-  background-size: 100% 100% !important;
-  background-repeat: no-repeat !important;
-  background-attachment: scroll !important;
+  background:
+    #352119 url("/assets/Background/brown_bg.svg") center / cover fixed !important;
 }
 
 .support-page,
@@ -13117,16 +13175,21 @@ width: clamp(1000px, 88vw, 1600px);
 .support-partners-flow {
   position: relative !important;
   isolation: isolate !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 
   background:
     linear-gradient(
       180deg,
-      rgba(31, 17, 10, 0.08),
-      rgba(49, 28, 17, 0.03) 45%,
-      rgba(24, 13, 8, 0.12)
+      rgba(37, 22, 15, 0.15),
+      rgba(87, 52, 34, 0.10) 42%,
+      rgba(20, 11, 8, 0.18)
     ),
-    url("/assets/Background/brown_bg.svg")
-    center top / cover fixed no-repeat !important;
+    radial-gradient(circle at 50% 0%, rgba(255, 244, 228, 0.12), transparent 38%),
+    linear-gradient(180deg, #352417 0%, #573c2c 32%, #382719 100%) !important;
+  background-repeat: no-repeat !important;
+  background-size: 100% 100% !important;
 }
 
 .support-partners-flow > .support-page,
@@ -13157,19 +13220,7 @@ width: clamp(1000px, 88vw, 1600px);
 }
 
 #partners.partners-page {
-  background-color: #352119 !important;
-  background-image: 
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.52),
-      rgba(255, 255, 255, 0.28) 42%,
-      rgba(255, 255, 255, 0.14)
-    ),
-    url("/assets/Background/brown_bg.svg") !important;
-  background-position: center top !important;
-  background-size: 100% 100% !important;
-  background-repeat: no-repeat !important;
-  background-attachment: scroll !important;
+  background: transparent !important;
 }
 
 /*
@@ -13519,8 +13570,8 @@ width: clamp(1000px, 88vw, 1600px);
 @media (max-width: 900px) {
   .support-partners-flow {
     background-attachment: scroll !important;
-    background-size: auto 100vh !important;
-    background-repeat: repeat-y !important;
+    background-size: 100% 100% !important;
+    background-repeat: no-repeat !important;
   }
 
   #helpline.support-page,
@@ -16855,24 +16906,25 @@ width: clamp(1000px, 88vw, 1600px);
   width: 100%;
 
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 165px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(180px, 210px);
 
-  gap: 8px;
+  gap: 10px;
 
-  align-items: center;
+  align-items: end;
 
   margin: 0 0 12px;
 }
 
 .inquiry-search,
-.inquiry-filter {
+.inquiry-filter,
+.inquiry-action-btn {
   width: 100%;
-  min-height: 38px;
+  min-height: 42px;
 
   padding: 0 11px;
 
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 9px;
+  border-radius: 10px;
 
   outline: none;
 
@@ -16889,17 +16941,46 @@ width: clamp(1000px, 88vw, 1600px);
 }
 
 .inquiry-search:focus,
-.inquiry-filter:focus {
+.inquiry-filter:focus,
+.inquiry-action-btn:focus {
   border-color: rgba(184, 35, 78, 0.7);
 }
 
-.inquiry-filter {
+.inquiry-filter,
+.inquiry-action-btn {
   cursor: pointer;
 }
 
 .inquiry-filter option {
   color: #151a22;
   background: #ffffff;
+}
+
+.inquiry-role-filter {
+  display: grid;
+  gap: 4px;
+}
+
+.inquiry-role-filter label {
+  color: #c3ccd8;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.inquiry-action-btn {
+  width: auto;
+  min-width: 144px;
+  padding: 0 16px;
+
+  border-color: rgba(255, 255, 255, 0.14);
+
+  background: linear-gradient(135deg, #8d0029, #b51d4b);
+
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
 }
 
 
@@ -17607,6 +17688,122 @@ width: clamp(1000px, 88vw, 1600px);
   }
 }
 
+.session-warning {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  left: auto;
+  z-index: 15000;
+  display: flex;
+  justify-content: flex-end;
+  width: auto;
+  max-width: calc(100vw - 36px);
+  pointer-events: none;
+}
+
+.session-warning-card {
+  width: min(360px, calc(100vw - 36px));
+  max-width: 360px;
+  padding: 14px 16px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(128, 0, 32, 0.96), rgba(158, 30, 66, 0.92));
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  color: #ffffff;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.session-warning-label {
+  margin: 0 0 6px;
+  color: #f8d3df;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.session-warning-card h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.session-warning-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.72rem;
+}
+
+.session-warning-button {
+  margin-top: 12px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.not-found-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(128, 0, 32, 0.2), transparent 28%),
+    linear-gradient(180deg, #0f1117 0%, #141a22 100%);
+  color: #edf1f5;
+}
+
+.not-found-card {
+  width: min(100%, 520px);
+  padding: 32px 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: #171b22;
+  box-shadow: 0 24px 70px rgba(47, 0, 14, 0.28);
+  text-align: center;
+}
+
+.not-found-kicker {
+  margin: 0 0 10px;
+  color: #f7bfd0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.not-found-card h1 {
+  margin: 0 0 10px;
+  color: #ffffff;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+}
+
+.not-found-card p {
+  margin: 0 0 20px;
+  color: #c9d0da;
+  line-height: 1.6;
+}
+
+.not-found-card button {
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: linear-gradient(145deg, #800020, #a62748);
+  color: #ffffff;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+}
+
 .logout-modal-backdrop,
 .account-editor-backdrop {
   position: fixed;
@@ -17614,48 +17811,57 @@ width: clamp(1000px, 88vw, 1600px);
   z-index: 10000;
   display: grid;
   place-items: center;
-  padding: 20px;
-  background: rgba(34, 42, 56, 0.58);
+  padding: 18px;
+  background: rgba(11, 14, 18, 0.72);
+  backdrop-filter: blur(3px);
 }
 
 .logout-modal,
 .account-editor {
-  width: min(100%, 520px);
-  padding: 24px;
-  border: 1px solid var(--mdps-border, #e7e9ee);
-  border-radius: 8px;
-  background: var(--mdps-panel, #ffffff);
-  color: var(--mdps-text, #222a38);
-  box-shadow: 0 24px 70px rgba(47, 0, 14, 0.24);
+  width: min(100%, 560px);
+  max-height: min(86vh, 760px);
+  padding: 22px 20px 18px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: #171b22;
+  color: #edf1f5;
+  box-shadow: 0 24px 70px rgba(47, 0, 14, 0.3);
 }
 
 .logout-modal h2,
 .account-editor h2 {
   margin: 0 0 10px;
+  color: #ffffff;
+  font-size: 1.2rem;
 }
 
 .logout-modal-actions,
 .account-editor-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 18px;
 }
 
 .logout-modal button,
 .account-editor button {
-  padding: 10px 16px;
-  border: 1px solid var(--mdps-border, #e7e9ee);
-  border-radius: 6px;
-  background: #ffffff;
-  color: var(--mdps-text, #222a38);
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #edf1f5;
   cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
 }
 
 .logout-modal-actions button:last-child,
 .account-editor-actions button:last-child {
-  border-color: var(--mdps-maroon, #800020);
-  background: var(--mdps-maroon, #800020);
+  border-color: rgba(255, 255, 255, 0.14);
+  background: linear-gradient(145deg, #800020, #a62748);
   color: #ffffff;
 }
 
@@ -17668,30 +17874,66 @@ width: clamp(1000px, 88vw, 1600px);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+
+.account-editor .form-header button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 8px;
+  background: rgba(128, 0, 32, 0.12);
+  color: #f8d5de;
 }
 
 .account-editor label,
 .account-editor fieldset {
   display: grid;
   gap: 6px;
+  color: #dfe5ec;
+  font-size: 0.7rem;
+  font-weight: 600;
 }
 
 .account-editor input:not([type='checkbox']),
 .account-editor select {
-  min-height: 40px;
+  min-height: 42px;
   padding: 8px 10px;
-  border: 1px solid var(--mdps-border, #e7e9ee);
-  border-radius: 4px;
-  background: #ffffff;
-  color: var(--mdps-text, #222a38);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #1d2330;
+  color: #edf1f5;
+}
+
+.account-editor input::placeholder {
+  color: #8d98a8;
+}
+
+.account-editor fieldset {
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.account-editor fieldset legend {
+  padding: 0 6px;
+  color: #c9d0da;
 }
 
 .section-checkbox,
 .active-toggle {
   display: flex !important;
-  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 8px !important;
+  color: #dfe5ec;
+}
+
+.account-editor .section-checkbox input,
+.account-editor .active-toggle input {
+  accent-color: #a62748;
 }
 
 .account-status {
@@ -17700,4 +17942,41 @@ width: clamp(1000px, 88vw, 1600px);
 
 .account-status.inactive {
   color: #ff9f9f;
+}
+
+.developer-page .inquiry-toolbar {
+  grid-template-columns: minmax(0, 1fr) auto minmax(180px, 210px);
+}
+
+.developer-page .inquiry-role-filter {
+  display: grid;
+  gap: 4px;
+}
+
+.developer-page .inquiry-role-filter label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.61rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.developer-page .inquiry-action-btn,
+.developer-page .inquiry-filter {
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #ffffff;
+}
+
+.developer-page .inquiry-action-btn {
+  min-width: 140px;
+  background: linear-gradient(135deg, #8d0029, #b51d4b);
+  font-weight: 700;
+}
+
+.developer-page .inquiry-filter option {
+  color: #151a22;
+  background: #ffffff;
 }

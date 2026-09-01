@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../contexts/AuthContext.jsx';
@@ -15,9 +15,9 @@ export default function AssignRoles() {
 
   const [selected, setSelected] = useState(null);
   const [newRole, setNewRole] = useState('student');
-  const [newGradeLevel, setNewGradeLevel] = useState('');
   const [newSections, setNewSections] = useState([]);
   const [loadError, setLoadError] = useState('');
+  const roleFormRef = useRef(null);
 
   const [toast, setToast] = useState({ message: '', type: 'success' });
 
@@ -68,9 +68,11 @@ export default function AssignRoles() {
     const term = String(search || '').toLowerCase().trim();
     const role = String(roleFilter || '').toLowerCase().trim();
 
-    let list = (Array.isArray(allUsers) ? allUsers : []).filter((u) => (u.role || 'student') !== 'developer');
+    let list = Array.isArray(allUsers) ? allUsers : [];
 
-    if (role) list = list.filter((u) => (u.role || 'student') === role);
+    if (role) {
+      list = list.filter((u) => String(u.role || 'student').toLowerCase() === role);
+    }
 
     if (term) {
       list = list.filter((u) => {
@@ -87,9 +89,17 @@ export default function AssignRoles() {
   function onSelect(u) {
     setSelected(u);
     setNewRole(u.role || 'student');
-    setNewGradeLevel(u.assignedGradeLevel || '');
     setNewSections(Array.isArray(u.assignedSections) ? u.assignedSections : (u.assignedSection ? [u.assignedSection] : []));
   }
+
+  useEffect(() => {
+    if (!selected) return;
+
+    roleFormRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }, [selected]);
 
   async function onSubmit() {
     const email = selected?.email;
@@ -99,7 +109,7 @@ export default function AssignRoles() {
     }
 
     try {
-      await updateUserRoleByEmail(email, newRole, newGradeLevel, newSections[0] || '', newSections);
+      await updateUserRoleByEmail(email, newRole, '', newSections[0] || '', newSections);
       showToast('Role updated successfully!', 'success');
       setSelected(null);
     } catch (err) {
@@ -197,7 +207,7 @@ export default function AssignRoles() {
             </div>
           </div>
 
-          <div id="roleAssignmentForm" className={['role-assignment-form', selected ? '' : 'hidden'].join(' ')}>
+          <div ref={roleFormRef} id="roleAssignmentForm" className={['role-assignment-form', selected ? '' : 'hidden'].join(' ')}>
             <div className="form-header">
               <h3>
                 Update Role for <span id="selectedUserName">{selected ? `${selected.firstName || ''} ${selected.lastName || ''}`.trim() || selected.email : ''}</span>
@@ -222,19 +232,8 @@ export default function AssignRoles() {
                 </select>
               </div>
 
-              <div className="form-field" id="gradeField" style={{ display: showTeacherFields ? 'block' : 'none' }}>
-                <label htmlFor="newGradeLevel">Grade Level (for teachers):</label>
-                <input
-                  type="text"
-                  id="newGradeLevel"
-                  placeholder="Example: Grade 10"
-                  value={newGradeLevel}
-                  onChange={(e) => setNewGradeLevel(e.target.value)}
-                />
-              </div>
-
               <div className="form-field" id="sectionField" style={{ display: showTeacherFields ? 'block' : 'none' }}>
-                <span>Assigned sections (for teachers):</span>
+                <span>Assigned class (for teachers):</span>
                 {STANDARD_SECTIONS.filter((section) => section !== 'No Section').map((section) => (
                   <label className="section-checkbox" key={section}>
                     <input
@@ -242,7 +241,7 @@ export default function AssignRoles() {
                       checked={newSections.includes(section)}
                       onChange={() => setNewSections((current) => current.includes(section) ? current.filter((item) => item !== section) : [...current, section])}
                     />
-                    {section}
+                    <span>{section}</span>
                   </label>
                 ))}
               </div>

@@ -402,7 +402,6 @@ async function onRemoveProfileImage() {
               alt={`${displayName} profile`}
               width="112"
               height="112"
-              loading="lazy"
               decoding="async"
             />
 

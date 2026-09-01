@@ -1,7 +1,13 @@
 import {
+  deleteApp,
+  initializeApp
+} from 'firebase/app';
+
+import {
   browserLocalPersistence,
   browserSessionPersistence,
   createUserWithEmailAndPassword,
+  getAuth,
   onAuthStateChanged as firebaseOnAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -13,6 +19,7 @@ import {
 import {
    addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -28,6 +35,7 @@ import {
 } from 'firebase/firestore';
 
 import { auth, db } from './firebaseClient.js';
+import firebaseConfig from '../config/firebaseConfig.js';
 
 const DEFAULT_SCHOOL_ID = 'mdps';
 const DEFAULT_SCHOOL_NAME = 'Mother of Divine Providence School';
@@ -610,6 +618,98 @@ export async function registerUser(payload = {}) {
   }
 }
 
+export async function createUserAccountByAdmin({
+  email = '',
+  password = '',
+  firstName = '',
+  lastName = '',
+  role = 'student',
+  gradeLevel = '',
+  section = 'No Section',
+  assignedSections = [],
+  isActive = true
+} = {}) {
+  const normalizedEmail = String(email || '').toLowerCase().trim();
+
+  if (!normalizedEmail) {
+    throw new Error('Email is required.');
+  }
+
+  if (!password) {
+    throw new Error('Password is required.');
+  }
+
+  if (!auth.currentUser) {
+    throw new Error('Your admin session expired. Please sign in again as an Organizational Admin.');
+  }
+
+  const secondaryApp = initializeApp(
+    firebaseConfig,
+    `account-creation-${Date.now()}`
+  );
+  const secondaryAuth = getAuth(secondaryApp);
+
+  try {
+    const { user: createdUser } = await createUserWithEmailAndPassword(
+      secondaryAuth,
+      normalizedEmail,
+      String(password)
+    );
+
+    const firstNameValue = String(firstName || '').trim();
+    const lastNameValue = String(lastName || '').trim();
+    const safeRole = normalizeRole(role, 'student');
+    const normalizedSection = STANDARD_SECTIONS.includes(section) ? section : 'No Section';
+    const normalizedSections = Array.isArray(assignedSections)
+      ? assignedSections.filter((item) => typeof item === 'string' && item.trim())
+      : [];
+
+    await setDoc(doc(db, 'users', createdUser.uid), {
+      uid: createdUser.uid,
+      email: normalizedEmail,
+      firstName: firstNameValue,
+      lastName: lastNameValue,
+      fullName: `${firstNameValue} ${lastNameValue}`.trim(),
+      role: safeRole,
+      schoolId: safeRole === 'nonStudent' ? null : DEFAULT_SCHOOL_ID,
+      schoolName: safeRole === 'nonStudent' ? '' : DEFAULT_SCHOOL_NAME,
+      gradeLevel: safeRole === 'student' ? String(gradeLevel || '').trim() : '',
+      section: safeRole === 'student' ? normalizedSection : '',
+      assignedGradeLevel: safeRole === 'teacher' ? String(gradeLevel || '').trim() : '',
+      assignedSection: safeRole === 'teacher' && normalizedSection !== 'No Section' ? normalizedSection : '',
+      assignedSections: safeRole === 'teacher'
+        ? (normalizedSections.length ? normalizedSections : (normalizedSection !== 'No Section' ? [normalizedSection] : []))
+        : [],
+      isActive: isActive !== false,
+      accountStatus: isActive !== false ? 'active' : 'inactive',
+      profileCompleted: false,
+      badges: [],
+      quizScores: [],
+      progress: [],
+      profileImage: { localPath: '', cloudUrl: '' },
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    await sendEmailVerification(createdUser, EMAIL_ACTION_SETTINGS);
+
+    return {
+      uid: createdUser.uid,
+      email: normalizedEmail,
+      role: safeRole,
+      firstName: firstNameValue,
+      lastName: lastNameValue,
+      fullName: `${firstNameValue} ${lastNameValue}`.trim(),
+      isActive: isActive !== false
+    };
+  } catch (error) {
+    const message = error?.message || 'Failed to create account.';
+    throw new Error(message.replace(/^FirebaseError:\s*/, ''));
+  } finally {
+    await deleteApp(secondaryApp);
+  }
+}
+
 export async function login(
   email,
   password,
@@ -784,6 +884,34 @@ export async function updateUserProfileById(
         snapshot.data()
       )
     : null;
+}
+
+export async function deleteUserProfileById(userId) {
+  if (!userId) {
+    throw new Error('Missing user id');
+  }
+
+  if (auth.currentUser?.uid === userId) {
+    throw new Error('You cannot delete your own administrator account.');
+  }
+
+  await deleteDoc(doc(db, 'users', userId));
+}
+
+export async function deactivateUserProfileById(userId) {
+  if (!userId) {
+    throw new Error('Missing user id');
+  }
+
+  if (auth.currentUser?.uid === userId) {
+    throw new Error('You cannot deactivate your own administrator account.');
+  }
+
+  await updateDoc(doc(db, 'users', userId), {
+    isActive: false,
+    accountStatus: 'inactive',
+    updatedAt: serverTimestamp()
+  });
 }
 
 export async function getAllUsers() {

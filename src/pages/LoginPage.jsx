@@ -5,6 +5,7 @@ import {
   getCurrentUser,
   getDashboardPath,
   login,
+  logout,
   resetPassword
 } from '../services/justifiFirebase.js';
 
@@ -142,6 +143,21 @@ export default function LoginPage() {
         password,
         { remember: rememberMe }
       );
+
+      // Restrict student access
+      if (user.role === 'student') {
+        try {
+          await logout();
+        } catch {
+          // Ignore logout errors
+        }
+        showFloatingPanel(
+          'Student accounts are not currently allowed to access this portal. Please contact your administrator.'
+        );
+        setLoginEmail('');
+        setLoginPassword('');
+        return;
+      }
 
       saveRememberedLogin(
         email,
