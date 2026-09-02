@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { auth } from '../../services/firebaseClient.js';
 import {
   createUserAccountByAdmin,
-  deleteUserProfileById,
   formatRoleLabel,
+  STANDARD_SECTIONS,
   deactivateUserProfileById,
   subscribeToUsers,
   updateUserProfileById
@@ -28,7 +30,8 @@ const EMPTY_NEW_ACCOUNT = {
   password: '',
   role: 'student',
   gradeLevel: 'Grade 11',
-  section: 'Section A'
+  section: 'Section A',
+  assignedSections: []
 };
 
 export default function ManageAccounts() {
@@ -38,6 +41,7 @@ export default function ManageAccounts() {
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [popupMessage, setPopupMessage] = useState('');
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [selected, setSelected] = useState(null);
@@ -119,8 +123,19 @@ useEffect(() => {
       firstName: account.firstName || '',
       lastName: account.lastName || '',
       gradeLevel: GRADE_LEVELS.includes(account.gradeLevel) ? account.gradeLevel : 'Grade 11',
-      section: CLASS_SECTIONS.includes(account.section) ? account.section : 'Section A'
+      section: CLASS_SECTIONS.includes(account.section) ? account.section : 'Section A',
+      assignedSections: Array.isArray(account.assignedSections)
+        ? account.assignedSections
+        : (account.assignedSection ? [account.assignedSection] : [])
     });
+  }
+
+  function handleNewRoleChange(nextRole) {
+    setNewAccount((current) => ({
+      ...current,
+      role: nextRole,
+      assignedSections: nextRole === 'teacher' ? current.assignedSections : []
+    }));
   }
 
   async function saveAccount(event) {
@@ -128,13 +143,23 @@ useEffect(() => {
     if (!selected) return;
     setSaving(true);
     try {
+      const nextAssignedSections = Array.isArray(edit.assignedSections)
+        ? edit.assignedSections.filter((section) => typeof section === 'string' && section.trim())
+        : [];
+
       await updateUserProfileById(selected.id, {
         firstName: edit.firstName.trim(),
         lastName: edit.lastName.trim(),
         fullName: `${edit.firstName.trim()} ${edit.lastName.trim()}`.trim(),
         ...(selected.role === 'student'
           ? { gradeLevel: edit.gradeLevel, section: edit.section }
-          : { assignedGradeLevel: '', assignedSection: '', assignedSections: [] })
+          : selected.role === 'teacher'
+            ? {
+                assignedGradeLevel: '',
+                assignedSection: nextAssignedSections[0] || '',
+                assignedSections: nextAssignedSections
+              }
+            : { assignedGradeLevel: '', assignedSection: '', assignedSections: [] })
       });
       setSelected(null);
     } catch (saveError) {
@@ -159,19 +184,19 @@ useEffect(() => {
         role: newAccount.role,
         gradeLevel: newAccount.gradeLevel,
         section: newAccount.section,
+        assignedSections: newAccount.role === 'teacher' ? newAccount.assignedSections : [],
         isActive: true
       });
 
       const displayName = `${createdAccount.firstName} ${createdAccount.lastName}`.trim() || createdAccount.email;
-      setSuccessMessage(`✓ Account created for ${displayName}. Verification email sent.`);
+      setPopupMessage(`Account created successfully for ${displayName}. Verification email sent.`);
 
       setShowAddAccount(false);
       setNewAccount(EMPTY_NEW_ACCOUNT);
 
-      // Clear success message after 3 seconds
       window.setTimeout(() => {
-        setSuccessMessage('');
-      }, 3000);
+        setPopupMessage('');
+      }, 2500);
     } catch (addError) {
       const message = addError?.message || 'Unknown error';
 
@@ -185,35 +210,74 @@ useEffect(() => {
     }
   }
 
-  async function deleteAccount() {
+  async function handleDeleteAccount() {
     if (!selected) return;
+
+    const targetUid = selected.uid || selected.id;
+    if (!targetUid) {
+      setError('No account selected for deletion.');
+      return;
+    }
 
     setSaving(true);
     setError('');
     setAccountAction(null);
+
     try {
-      await deleteUserProfileById(selected.id);
+      if (auth.currentUser) {
+        await auth.currentUser.getIdToken(true);
+      }
+
+      const deleteUserAccount = httpsCallable(getFunctions(), 'deleteUserAccountByAdmin');
+      await deleteUserAccount({ uid: targetUid });
+
       setSelected(null);
-      setSuccessMessage('Account profile removed.');
+      setPopupMessage('Account deleted successfully.');
+      window.setTimeout(() => {
+        setPopupMessage('');
+      }, 2500);
     } catch (deleteError) {
-      setError(`Failed to remove account: ${deleteError?.message || 'Unknown error'}`);
+      const message = deleteError?.message || 'Unknown error';
+
+      if (/401|unauthenticated|permission|not authorized|session expired/i.test(message)) {
+        setError('Your admin session is invalid or expired. Please sign in again and try again.');
+      } else {
+        setError(`Failed to delete account: ${message}`);
+      }
     } finally {
       setSaving(false);
     }
   }
 
   async function deactivateAccount() {
-    if (!selected || selected.isActive === false) return;
+    if (!selected) return;
 
     setSaving(true);
     setError('');
     setAccountAction(null);
+
     try {
+      if (selected.isActive === false) {
+        await updateUserProfileById(selected.id, {
+          isActive: true,
+          accountStatus: 'active'
+        });
+        setSelected(null);
+        setPopupMessage('Account activated successfully.');
+        window.setTimeout(() => {
+          setPopupMessage('');
+        }, 2500);
+        return;
+      }
+
       await deactivateUserProfileById(selected.id);
       setSelected(null);
-      setSuccessMessage('Account deactivated. Firebase Auth credentials remain unchanged.');
+      setPopupMessage('Account deactivated successfully.');
+      window.setTimeout(() => {
+        setPopupMessage('');
+      }, 2500);
     } catch (deactivateError) {
-      setError(`Failed to deactivate account: ${deactivateError?.message || 'Unknown error'}`);
+      setError(`Failed to update account status: ${deactivateError?.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -276,7 +340,6 @@ useEffect(() => {
           </div>
 
           {loadingAccounts ? <div className="inquiry-empty-state">Loading accounts...</div> : null}
-          {!loadingAccounts && successMessage ? <div className="inquiry-empty-state is-success" style={{color: '#22863a', backgroundColor: '#f0f6fc', borderColor: '#bde4b1'}}>{successMessage}</div> : null}
           {!loadingAccounts && error ? <div className="inquiry-empty-state is-error">{error}</div> : null}
           {!loadingAccounts && !error && !successMessage && !filteredAccounts.length ? (
             <div className="inquiry-empty-state"><strong>No accounts found</strong><p>Try changing the search or role filter.</p></div>
@@ -324,7 +387,30 @@ useEffect(() => {
                 <select id="account-section" value={edit.section} onChange={(event) => setEdit({ ...edit, section: event.target.value })}>{CLASS_SECTIONS.map((section) => <option key={section}>{section}</option>)}</select>
               </>
             ) : null}
-            <div className="account-editor-actions"><button type="button" onClick={() => requestAccountAction('deactivate')} disabled={saving || selected.isActive === false}>Deactivate</button><button type="button" onClick={() => requestAccountAction('delete')} disabled={saving}>Delete profile</button><button type="button" onClick={() => setSelected(null)}>Cancel</button><button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</button></div>
+
+            {selected.role === 'teacher' ? (
+              <div>
+                <label>Assigned class</label>
+                <div style={{ display: 'grid', gap: '8px', marginTop: '8px' }}>
+                  {STANDARD_SECTIONS.filter((section) => section !== 'No Section').map((section) => (
+                    <label key={section} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="checkbox"
+                        checked={Array.isArray(edit.assignedSections) && edit.assignedSections.includes(section)}
+                        onChange={() => setEdit((current) => ({
+                          ...current,
+                          assignedSections: current.assignedSections.includes(section)
+                            ? current.assignedSections.filter((item) => item !== section)
+                            : [...current.assignedSections, section]
+                        }))}
+                      />
+                      <span>{section}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            <div className="account-editor-actions"><button type="button" onClick={() => requestAccountAction('deactivate')} disabled={saving}>{selected.isActive === false ? 'Activate' : 'Deactivate'}</button><button type="button" onClick={() => requestAccountAction('delete')} disabled={saving}>Delete profile</button><button type="button" onClick={() => setSelected(null)}>Cancel</button><button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</button></div>
           </form>
         </div>
       ) : null}
@@ -339,22 +425,36 @@ useEffect(() => {
             onMouseDown={(event) => event.stopPropagation()}
           >
             <h2 id="account-action-title">
-              {accountAction === 'delete' ? 'Delete account profile?' : 'Deactivate account?'}
+              {accountAction === 'delete' ? 'Delete account profile?' : selected?.isActive === false ? 'Activate account?' : 'Deactivate account?'}
             </h2>
             <p>
               {accountAction === 'delete'
                 ? `This removes ${selected?.email || 'this account'} from Firestore. Firebase Auth credentials cannot be deleted from the browser.`
-                : `This prevents ${selected?.email || 'this account'} from signing in. Firebase Auth credentials will remain unchanged.`}
+                : selected?.isActive === false
+                  ? `This re-enables ${selected?.email || 'this account'} so they can sign in again.`
+                  : `This prevents ${selected?.email || 'this account'} from signing in. Firebase Auth credentials will remain unchanged.`}
             </p>
             <div className="logout-modal-actions">
               <button type="button" onClick={() => setAccountAction(null)} disabled={saving}>Cancel</button>
               <button
                 type="button"
-                onClick={accountAction === 'delete' ? deleteAccount : deactivateAccount}
+                onClick={accountAction === 'delete' ? handleDeleteAccount : deactivateAccount}
                 disabled={saving}
               >
-                {saving ? 'Working...' : accountAction === 'delete' ? 'Delete profile' : 'Deactivate'}
+                {saving ? 'Working...' : accountAction === 'delete' ? 'Delete profile' : selected?.isActive === false ? 'Activate' : 'Deactivate'}
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {popupMessage ? (
+        <div className="logout-modal-backdrop" role="presentation" onMouseDown={() => setPopupMessage('')}>
+          <div className="logout-modal" role="dialog" aria-modal="true" aria-labelledby="popup-message-title" onMouseDown={(event) => event.stopPropagation()}>
+            <h2 id="popup-message-title">Success</h2>
+            <p>{popupMessage}</p>
+            <div className="logout-modal-actions">
+              <button type="button" onClick={() => setPopupMessage('')}>Close</button>
             </div>
           </div>
         </div>
@@ -374,7 +474,7 @@ useEffect(() => {
             <label>Password<input type="password" value={newAccount.password} onChange={(event) => setNewAccount({ ...newAccount, password: event.target.value })} /></label>
 
             <label htmlFor="new-account-role">Role</label>
-            <select id="new-account-role" value={newAccount.role} onChange={(event) => setNewAccount({ ...newAccount, role: event.target.value })}>
+            <select id="new-account-role" value={newAccount.role} onChange={(event) => handleNewRoleChange(event.target.value)}>
               <option value="student">Student</option>
               <option value="teacher">Teacher</option>
               <option value="developer">Organizational Admin</option>
@@ -386,6 +486,29 @@ useEffect(() => {
                 <label htmlFor="new-account-section">Section</label>
                 <select id="new-account-section" value={newAccount.section} onChange={(event) => setNewAccount({ ...newAccount, section: event.target.value })}>{CLASS_SECTIONS.map((section) => <option key={section}>{section}</option>)}</select>
               </>
+            ) : null}
+
+            {newAccount.role === 'teacher' ? (
+              <div className="teacher-assignment-panel">
+                <label className="teacher-assignment-label">Assigned class</label>
+                <div className="teacher-assignment-grid">
+                  {STANDARD_SECTIONS.filter((section) => section !== 'No Section').map((section) => (
+                    <label key={section} className="teacher-assignment-option">
+                      <input
+                        type="checkbox"
+                        checked={newAccount.assignedSections.includes(section)}
+                        onChange={() => setNewAccount((current) => ({
+                          ...current,
+                          assignedSections: current.assignedSections.includes(section)
+                            ? current.assignedSections.filter((item) => item !== section)
+                            : [...current.assignedSections, section]
+                        }))}
+                      />
+                      <span>{section}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             ) : null}
 
             <div className="account-editor-actions">

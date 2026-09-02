@@ -20,6 +20,7 @@ export default function AssignRoles() {
   const roleFormRef = useRef(null);
 
   const [toast, setToast] = useState({ message: '', type: 'success' });
+  const toastTimerRef = useRef(null);
 
   useEffect(() => {
     if (loading) return;
@@ -33,8 +34,14 @@ export default function AssignRoles() {
   }, [loading, user, navigate]);
 
   function showToast(message, type = 'success') {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+
     setToast({ message: String(message || ''), type });
-    window.setTimeout(() => setToast({ message: '', type: 'success' }), 3000);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast({ message: '', type: 'success' });
+    }, 3000);
   }
 
   useEffect(() => {
@@ -88,8 +95,18 @@ export default function AssignRoles() {
 
   function onSelect(u) {
     setSelected(u);
-    setNewRole(u.role || 'student');
-    setNewSections(Array.isArray(u.assignedSections) ? u.assignedSections : (u.assignedSection ? [u.assignedSection] : []));
+    const nextRole = u.role || 'student';
+    setNewRole(nextRole);
+    setNewSections(nextRole === 'teacher'
+      ? (Array.isArray(u.assignedSections) ? u.assignedSections : (u.assignedSection ? [u.assignedSection] : []))
+      : []);
+  }
+
+  function handleRoleChange(nextRole) {
+    setNewRole(nextRole);
+    if (nextRole !== 'teacher') {
+      setNewSections([]);
+    }
   }
 
   useEffect(() => {
@@ -110,7 +127,7 @@ export default function AssignRoles() {
 
     try {
       await updateUserRoleByEmail(email, newRole, '', newSections[0] || '', newSections);
-      showToast('Role updated successfully!', 'success');
+      showToast('Saved assign roles', 'success');
       setSelected(null);
     } catch (err) {
       console.error(err);
@@ -225,7 +242,7 @@ export default function AssignRoles() {
 
               <div className="form-field">
                 <label htmlFor="newRole">New Role:</label>
-                <select id="newRole" value={newRole} onChange={(e) => setNewRole(e.target.value)}>
+                <select id="newRole" value={newRole} onChange={(e) => handleRoleChange(e.target.value)}>
                   <option value="student">Student</option>
                   <option value="teacher">Teacher</option>
                   <option value="developer">Organizational Admin</option>
@@ -233,8 +250,8 @@ export default function AssignRoles() {
               </div>
 
               <div className="form-field" id="sectionField" style={{ display: showTeacherFields ? 'block' : 'none' }}>
-                <span>Assigned class (for teachers):</span>
-                {STANDARD_SECTIONS.filter((section) => section !== 'No Section').map((section) => (
+                {showTeacherFields ? <span>Assigned class (for teachers):</span> : null}
+                {showTeacherFields && STANDARD_SECTIONS.filter((section) => section !== 'No Section').map((section) => (
                   <label className="section-checkbox" key={section}>
                     <input
                       type="checkbox"

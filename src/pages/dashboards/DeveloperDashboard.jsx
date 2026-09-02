@@ -115,7 +115,7 @@ export default function DeveloperDashboard() {
 
       <div className="back-row">
         <a className="back-btn" href="#" onClick={(e) => { e.preventDefault(); navigate('/'); }}>
-          Back
+          Back to Home
         </a>
       </div>
 
